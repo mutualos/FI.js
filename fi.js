@@ -15,6 +15,7 @@ const presenterTable = document.getElementById('presenterTable');
 const presenterThead = document.getElementById('presenterThead');
 const presenterTbody = document.getElementById('presenterTbody');
 
+
 function $$maskString(str) {
     var shift_string  = mask_encryption; //document.getElementById('mask_encryption').innerHTML;
     var encrypted_string = '';
@@ -85,20 +86,21 @@ function $$packContainer() {
             accordion_button.appendChild(document.createTextNode('API'));
             accordion_button.setAttribute("type", "button");
             accordion_button.setAttribute("data-bs-toggle", "collapse");
-            accordion_button.setAttribute("data-bs-target", "#collapse_formula");
+            accordion_button.setAttribute("data-bs-target", "#collapse_api");
             accordion_button.setAttribute("aria-expanded", "true");
-            accordion_button.setAttribute("aria-controls", "collapse_formula");
+            accordion_button.setAttribute("aria-controls", "collapse_api");
             accordion_header.appendChild(accordion_button);
             accordion_item.appendChild(accordion_header);
             const accordion_collapse = document.createElement("div");
             accordion_collapse.classList.add("accordion-collapse", "collapse");
-            accordion_collapse.setAttribute("id", "collapse_formula");
+            accordion_collapse.setAttribute("id", "collapse_api");
             accordion_collapse.setAttribute("data-bs-parent", "#catalog_accordion");
             const accordion_body = document.createElement("div");
             accordion_body.classList.add("accordion-body");
-            accordion_body.style['color']  = '#ff00ff';
+            accordion_body.style['color']  = '#ababab';
             accordion_body.style['word-wrap'] = 'break-word';
-            accordion_body.innerHTML = fijsApi[elements];
+            console.log('fijsApi[elements]', fijsApi[elements]);
+            accordion_body.innerHTML = JSON.stringify(fijsApi[elements]);
             accordion_body.innerHTML = highlightJSON(accordion_body.innerHTML);
             accordion_collapse.appendChild(accordion_body);
             accordion_item.appendChild(accordion_collapse);
@@ -127,7 +129,7 @@ function $$packContainer() {
         const accordion_body = document.createElement("div");
         accordion_body.classList.add("accordion-body");
         accordion_body.innerHTML = '{';
-        accordion_body.style['color']  = '#f5f5f5';
+        accordion_body.style['color']  = '#ababab';
         accordion_body.style['word-wrap'] = 'break-word';
         //if (elements == 'fijsApi') {
         //    accordion_body.appendChild(document.createTextNode(elements + " : " + JSON.stringify(fijsApi)));    
@@ -516,7 +518,6 @@ function parseAndEvaluateData(lines, headers, pipeFormula) {
                     rowObject[columnName] = values[columnIndex];
                 }
             }
-
             /*
             // If a value has been found (either directly or through an alias), assign it to rowObject
             if (valueFound) {
@@ -552,12 +553,13 @@ function parseAndEvaluateData(lines, headers, pipeFormula) {
                         //console.log('sum log: ', key, newValue, existingValue, (existingValue + parseFloat(newValue)).toFixed(2), presenterObjects[key]['Q']);
                         // Store the sum and then format 
                         presenterObjects[key][prop] = Number.isInteger( presenterObjects[key][prop]) ? existingValue + newValue : (existingValue + parseFloat(newValue)).toFixed(2);
-                        
-                    } else {
+                    } 
+                    // Does not concatenate strings (see below if for concat handler)
+                    //else {
                         // Handle as strings if one of the values is not a number
                         // This ensures concatenation only happens when summation isn't applicable
-                        presenterObjects[key][prop] = presenterObjects[key][prop] ? `${presenterObjects[key][prop]}, ${rowObject[prop]}` : rowObject[prop];
-                    }
+                        //presenterObjects[key][prop] = presenterObjects[key][prop] ? `${presenterObjects[key][prop]}, ${rowObject[prop]}` : rowObject[prop];
+                    //}
                 }
             });
         // in the event primary key is not present in presenterObjects
@@ -611,7 +613,8 @@ function $$displayEvaluatedResults(sort_presenter = true) {
     // Filter out entries where Eval contains 'omit' before sorting or assigning
     const filteredPresenterObjects = {};
     Object.entries(presenterObjects).forEach(([key, obj]) => {
-        if (!obj.Eval || !obj.Eval.includes("omit")) {
+        console.log('obj.Eval', obj.Eval)
+        if (obj.Eval && obj.Eval !== "omit") {
             filteredPresenterObjects[key] = obj;
         }
     });
@@ -798,7 +801,6 @@ function $$displayEvaluatedResults(sort_presenter = true) {
                     });
                 }
                 
-                
                 // Accumulate statistical values if applicable
                 if (columnConfig.statistic && columnConfig.statistic !== 'null') {
                     // Initialize accumulator for this column if it doesn't exist
@@ -867,22 +869,6 @@ function $$displayEvaluatedResults(sort_presenter = true) {
             presenterColumns.slice(1).forEach(columnConfig => { // Assuming 'Rank' is the first column and already handled
                 console.log('columnConfig', columnConfig);
                 const td = document.createElement('td');
-                /*
-                if (columnConfig.statistic === "categorize") {
-                    // Here we directly call categorizeAndAggregate with the necessary data
-                    // First, ensure we have the correct category column name and Eval values to pass
-                    const categoryValues = evalAccumulators[columnConfig.name].values;
-                    const evalValues = evalAccumulators['Eval'].values; // Assuming 'Eval' is the column to be aggregated
-    
-                    if (categoryValues && evalValues) {
-                        let categoryAggregates = categorizeAndAggregate(categoryValues, evalValues);
-    
-                        // Formatting the aggregates for display
-                        td.innerHTML = Object.entries(categoryAggregates).map(([category, evalSum]) => `${category}: ${evalSum}`).join('<br>');
-                    } else {
-                        td.textContent = '-';
-                    }
-                }*/
                 if (columnConfig.statistic === "categorize") {
                     // Get the correct category column name and Eval values to pass
                     const categoryValues = evalAccumulators[columnConfig.name].values;
@@ -899,7 +885,7 @@ function $$displayEvaluatedResults(sort_presenter = true) {
                     td.style.color = getRandomColor();
                 } else if (columnConfig.statistic && columnConfig.statistic !== 'null') {
                     // Calculate the summary statistic value
-                    let summaryValue = calculateStatistic(columnConfig.statistic, evalAccumulators[columnConfig.name]);
+                    let summaryValue = calculateStatistic(columnConfig.statistic, evalAccumulators[columnConfig.name], columnConfig);
                     
                     if (isNaN(summaryValue) ) {
                         summaryValue = '-';
@@ -955,10 +941,25 @@ function categorizeAndAggregate(values, evalValues) {
     return categorySums;
 }
 
-function calculateStatistic(statistic, accumulator) {
+function calculateStatistic(statistic, accumulator, columnConfig) {
     // Implement calculation logic for each statistic type
     // Placeholder switch statement for example
     switch (statistic) {
+        case 'function':
+            if (columnConfig.functionName && typeof fiFunctions[columnConfig.functionName] === 'function') {
+                // Construct parameters based on functionParams mapping
+                const params = Object.entries(columnConfig.functionParams).reduce((paramsObj, [paramName, dataField]) => {
+                    // Retrieve the correct data from accumulator using the mapped data field
+                    paramsObj[paramName] = accumulator[dataField]; // Ensure this correctly accesses the required data
+                    return paramsObj;
+                }, {});
+                
+                // Call the function with the constructed parameters
+                return fiFunctions[columnConfig.functionName](...Object.values(params));
+            } else {
+                console.error(`Function ${columnConfig.functionName} is not defined in fiFunctions.`);
+                return 'Function error';
+            }
         case 'categorize':
             // Use the categorizeAndCount function for categorization
             return categorizeAndCount(accumulator.values);
@@ -1052,7 +1053,6 @@ function categorizeAndCount(values) {
     return categoryCounts;
 }
 
-
 function calculatePercentile(values, percentile) {
     const sortedValues = values.slice().sort((a, b) => a - b);
     const pos = (percentile / 100) * (sortedValues.length - 1) + 1;
@@ -1101,7 +1101,6 @@ function generateSelectionControls(columnNames) {
         checkbox.addEventListener('change', (e) => {
             updateChartBasedOnSelection(); // Function to update the chart
         });
-
         controlsContainer.appendChild(label);
     });
 }
@@ -1120,11 +1119,11 @@ function updateChartBasedOnSelection() {
     // Update the chart
     const ctx = document.getElementById('summaryChart').getContext('2d');
 
-    if (window.summaryChart) {
-        window.summaryChart.destroy();
+    if (window.mySummaryChart) {
+        window.mySummaryChart.destroy();
     }
 
-    window.summaryChart = new Chart(ctx, {
+    window.mySummaryChart = new Chart(ctx, {
         type: 'bar',
         data: chartData,
         options: {
@@ -1271,9 +1270,6 @@ function evaluateFormula(pipes_arg, pipeFormula) {
     
     // Evaluate and replace variables, including those defined with ternary expressions
     formula = evaluateAndReplaceVariables(formula, pipes_arg);
-
-    // MOVED Handle relationships, dictionaries, and APIs in one step
-    //formula = processFormulaElements(formula);
     
     // Execute FI.js function calls within the formula
     formula = executeFunctionCall(formula);
@@ -1463,10 +1459,42 @@ function processFormulaElements(formula) {
     return formula; // Return the processed formula
 }
 
+function $$mergeContainers(target, source) {
+    for (const key in source) {
+        if (source[key] && typeof source[key] === 'object' && !(source[key] instanceof Array)) {
+            if (!target[key]) target[key] = {};
+            $$mergeContainers(target[key], source[key]);
+        } else {
+            target[key] = source[key];
+        }
+    }
+    return target;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('search_str');
     const searchButton = document.getElementById('serach_btn');
     let lastFocusedIndex = -1; // Keeps track of the last focused row
+    
+    // Merge localContainerData (priority) and FIContainerData  
+    // Access the JSON data from the <script> tag
+    const inlineDataElement = document.getElementById('FIContainerData');
+    const inlineData = JSON.parse(inlineDataElement.textContent || inlineDataElement.innerText);
+    // Define localContainerData as a string; this might come from another script or data source
+    // Simulating a scenario where localContainerData might be empty or undeclared
+    // Check if localContainerData is valid JSON and not empty before parsing
+    let localData = {};
+    if (typeof localContainerData !== 'undefined' && localContainerData !== null) {
+        try {
+            localData = JSON.parse(localContainerData);
+            const mergedData = $$mergeContainers(inlineData, localData);
+            console.log('mergedData', mergedData);
+        } catch (e) {
+            console.error('Error parsing localContainerData:', e);
+        }
+    } else {
+        console.error('localContainerData is not declared or is null');
+    }
     
     //logout routine
     const logOutLink = document.getElementById('logOut');
