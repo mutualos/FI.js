@@ -774,6 +774,7 @@ function $$displayEvaluatedResults(sort_presenter = true) {
     
     presenterTbody.innerHTML = ''; // Clear any existing rows
     // Create and append table body with rows
+    
     Object.entries(presentSorted).forEach(([key, obj], index) => {
         const row = document.createElement('tr');
         // Data columns
@@ -801,8 +802,19 @@ function $$displayEvaluatedResults(sort_presenter = true) {
                     });
                 }
                 
+                // Dynamically compute value if statistic is a function
+                if (columnConfig.statistic === 'function' && columnConfig.functionName && typeof fiFunctions[columnConfig.functionName] === 'function') {
+                    // Prepare the parameters for the function based on the configuration
+                    const functionParams = Object.entries(columnConfig.functionParams).reduce((params, [paramName, fieldName]) => {
+                        params[paramName] = obj[fieldName];
+                        return params;
+                    }, {});
+        
+                    // Call the function and get the result
+                    value = fiFunctions[columnConfig.functionName](...Object.values(functionParams));
+        
                 // Accumulate statistical values if applicable
-                if (columnConfig.statistic && columnConfig.statistic !== 'null') {
+                } else if (columnConfig.statistic && columnConfig.statistic !== 'null') {
                     // Initialize accumulator for this column if it doesn't exist
                     if (!evalAccumulators[columnConfig.name]) {
                         evalAccumulators[columnConfig.name] = { values: [], count: 0 };
@@ -819,7 +831,7 @@ function $$displayEvaluatedResults(sort_presenter = true) {
                         evalAccumulators[columnConfig.name].count++;
                     }
                 }
-                
+            
                 
                 // Handle special case for ID column; mask IDs
                 if (columnConfig.name === "ID" && value !== undefined) {
@@ -1119,11 +1131,11 @@ function updateChartBasedOnSelection() {
     // Update the chart
     const ctx = document.getElementById('summaryChart').getContext('2d');
 
-    if (window.mySummaryChart) {
-        window.mySummaryChart.destroy();
+    if (window.fijsSummaryChart) {
+        window.fijsSummaryChart.destroy();
     }
 
-    window.mySummaryChart = new Chart(ctx, {
+    window.fijsSummaryChart = new Chart(ctx, {
         type: 'bar',
         data: chartData,
         options: {
@@ -1493,7 +1505,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Error parsing localContainerData:', e);
         }
     } else {
-        console.error('localContainerData is not declared or is null');
+        console.log('localContainerData is not declared or is null');
     }
     
     //logout routine
