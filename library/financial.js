@@ -53,7 +53,6 @@ const financial = {
                 if (averagePrincipal < 0) {
                     console.log('Warning: Average outstanding below zero.');
                 }
-                console.log('average principal:', averagePrincipal.toFixed(2));
                 return averagePrincipal.toFixed(2);
             }
         },
@@ -61,12 +60,13 @@ const financial = {
             description: "Calculates the loan loss reserve based on various factors.",
             implementation: function(type, principal, annualRate, riskRating, LTV = null, guarantee = null, termMonths = null, amortizationMonths = null, maturityDate = null) {
                 //const libraries = window.libraries; // Access the libraries object directly
+				
                 if (parseFloat(principal) <= 0) return 0.00;
                 if (typeof libraries.dictionaries.loanTypeID.values === 'object') {
                     const typeIDs = libraries.dictionaries.loanTypeID.values;
                     let identifiedType = null;
                     for (let key in typeIDs) {
-                        if (typeIDs[key].includes(type)) {
+                        if (typeIDs[key].includes(String(type))) {
                             identifiedType = key;
                             break;
                         }
@@ -109,10 +109,9 @@ const financial = {
                             month++;
                         }
                         lossReserve = lossReserve / months * 12 * riskFactor;
-                        console.log('Loan loss reserve: ', lossReserve.toFixed(2));
                         return lossReserve.toFixed(2);
                     } else {
-                        console.error('type not found in libraries.dictionaries.loanTypeID.values');
+						console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
                     }
                 } else {
                     console.log('libaries are missing loanTypeID see financial.js library docs');
@@ -126,7 +125,7 @@ const financial = {
                     const typeIDs = libraries.dictionaries.loanTypeID.values;
                     let identifiedType = null;
                     for (let key in typeIDs) {
-                        if (typeIDs[key].includes(type)) {
+                        if (typeIDs[key].includes(String(type))) {
                             identifiedType = key;
                             break;
                         }
@@ -139,7 +138,7 @@ const financial = {
                         let expense = Math.max(principalCostMin, Math.min(principalCostMax, principal)) * originationFactor / Math.max(months, 60) * 12;
                         return expense.toFixed(2);
                     } else {
-                        console.error('type not found in libraries.dictionaries.loanTypeID.values');
+                        console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
                     }
                 } else {
                     console.log('libaries are missing loanTypeID see financial.js library docs');
