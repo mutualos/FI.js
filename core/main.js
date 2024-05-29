@@ -20,7 +20,7 @@ document.addEventListener('allLibrariesLoaded', function(e) {
             console.log("No files selected.");
             return;
         }
-		showSpinner();
+	showSpinner();
         const processingPromises = [];
         let allResults = [];
     
@@ -135,23 +135,23 @@ function processFormula(dataLines, headers, pipeFormula, pipeID, libraries) {
     const columns = window.buildConfig.presentation.columns.map(col => col.key);
 
     dataLines.forEach(line => {
-		const values = line.split(',').map(e => e === '' ? null : e);
+	const values = line.split(',').map(e => e === '' ? null : e);
         const dataObject = translatedHeaders.reduce((obj, header, index) => {
             obj[header] = values[index] ? values[index].trim() : null; // Assign values to translated headers
             return obj;
         }, {});
 		
-		const result = evalFormula(dataObject, pipeFormula, translations[pipeID], libraries);
-		const id = dataObject['ID'] || dataObject[Object.keys(dataObject)[0]]; // Use 'ID' or first key if 'ID' is not available
+	const result = evalFormula(dataObject, pipeFormula, translations[pipeID], libraries);
+	const id = dataObject['ID'] || dataObject[Object.keys(dataObject)[0]]; // Use 'ID' or first key if 'ID' is not available
 
-		const limitedDataObject = { id };
-		columns.forEach(column => {
-			if (column in dataObject) {
-				limitedDataObject[column] = dataObject[column];
-			}
-		});
-			
-		results.push({ ...limitedDataObject, result }); // Store result with ID and required columns
+	const limitedDataObject = { id };
+	columns.forEach(column => {
+		if (column in dataObject) {
+			limitedDataObject[column] = dataObject[column];
+		}
+	});
+		
+	results.push({ ...limitedDataObject, result }); // Store result with ID and required columns
     });
 
     return results; // Return results to be resolved
@@ -182,8 +182,6 @@ function displayResults(results) {
 
     // Combine rows with the same primary key
     const combinedResults = {};
-
-	console.log('combinedResults', combinedResults);
     results.forEach(result => {
         const primaryKeyValue = result[primaryKey];
         if (!combinedResults[primaryKeyValue]) {
