@@ -111,7 +111,7 @@ const financial = {
                         lossReserve = lossReserve / months * 12 * riskFactor;
                         return lossReserve.toFixed(2);
                     } else {
-						console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
+			console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
                     }
                 } else {
                     console.log('libaries are missing loanTypeID see financial.js library docs');
