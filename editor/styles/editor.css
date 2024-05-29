@@ -1,0 +1,143 @@
+body {
+    display: flex;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    background-color: #1e1e1e;
+    color: #dcdcdc;
+}
+
+#copernicus_sidebar {
+    width: 25%;
+    background: #2e2e2e;
+    padding: 10px;
+    box-sizing: border-box;
+    border-right: 1px solid #3c3c3c;
+    overflow-y: auto;
+    margin-bottom: 3em;
+}
+
+#editor-container {
+    width: 50%;
+    padding: 10px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+#pipe_sidebar {
+    width: 25%;
+    background: #2e2e2e;
+    padding: 10px;
+    box-sizing: border-box;
+    border-left: 1px solid #3c3c3c;
+    overflow-y: auto;
+    margin-bottom: 3em;
+}
+
+#editor {
+    width: 100%;
+    height: calc(100vh - 90px);
+    /* border: 1px solid #3c3c3c; */
+    font-size: 16px;
+    font-family: monospace;
+    white-space: pre-wrap; /* Allow word wrap */
+    overflow: auto;
+    outline: none;
+    background-color: #1e1e1e;
+    color: #dcdcdc;
+    border-radius: 5px;
+}
+
+.keyword {
+    color: #569cd6;
+    font-weight: bold;
+}
+
+.function {
+    color: #dcdcaa;
+}
+
+.attribute {
+    color: #ce9178;
+}
+
+.dictionaries {
+    color: #9cdcfe;
+}
+
+.pipe {
+    color: #ffc914;
+}
+
+.suggestion {
+    margin-bottom: 10px;
+}
+
+.suggestion h3 {
+    margin: 0 0 5px 0;
+    color: #dcdcdc;
+}
+
+.suggestion-item {
+    padding: 5px;
+    cursor: pointer;
+    background: #3c3c3c;
+    border: 1px solid #3c3c3c;
+    margin-bottom: 3px;
+    transition: background 0.3s ease;
+}
+
+.suggestion-item:hover {
+    background: #5c5c5c;
+}
+
+.suggestion-item.function {
+    color: #dcdcaa;
+}
+
+.suggestion-item.attribute {
+    color: #9cdcfe;
+}
+
+.suggestion-item.dictionaries {
+    color: #9cdcfe;
+}
+
+.suggestion-item.pipe {
+    color: 	#ffc914; /* Example color for pipe items */
+}
+
+.value {
+    color: #da70d6; /* Example color for values */
+}
+
+.pipe_category {
+    text-transform: uppercase;
+}
+/* Fixed Footer */
+.fixed-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #001f3f;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+.fixed-footer button {
+    color: white;
+    background-color: #28a745; /* Changed background color for more contrast */
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.fixed-footer button:hover {
+    background-color: #218838;
+}
