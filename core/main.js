@@ -135,7 +135,10 @@ function processFormula(dataLines, headers, pipeFormula, pipeID, libraries) {
     const columns = window.buildConfig.presentation.columns.map(col => col.key);
 
     dataLines.forEach(line => {
-	const values = line.split(',').map(e => e === '' ? null : e);
+	//const values = line.split(',').map(e => e === '' ? null : e);
+	// Split the line by comma, but keep values enclosed in single or double quotes together
+        const values = line.match(/(?:'[^']*'|"[^"]*"|[^,])+/g).map(value => value.trim().replace(/^['"]|['"]$/g, ''));
+
         const dataObject = translatedHeaders.reduce((obj, header, index) => {
             obj[header] = values[index] ? values[index].trim() : null; // Assign values to translated headers
             return obj;
