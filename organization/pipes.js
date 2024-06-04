@@ -11,6 +11,7 @@ const translations = {
     },
     checking: {
         "Portfolio": "ID",
+        "Class_Code": "type",
         "Previous_Average_Balance": "balance",
         "PMTD_Service_Charge": "charges",
         "PMTD_Service_Charge_Waived": "chargesWaived",
