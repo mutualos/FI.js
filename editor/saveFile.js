@@ -7,6 +7,66 @@ document.getElementById('saveButton').addEventListener('click', function() {
         return;
     }
 
+    // Function to identify used pipes in the formula
+    function identifyUsedPipes(content) {
+        const usedPipes = new Set();
+        pipeItems.forEach(pipe => {
+            pipe.items.forEach(item => {
+                if (content.includes(item)) {
+                    usedPipes.add(pipe.category);
+                }
+            });
+        });
+        return Array.from(usedPipes);
+    }
+
+    // Split the editor content by semicolons to get individual formulas
+    const formulas = editorContent.split(';').map(f => f.trim()).filter(f => f);
+
+    function stem(word) {
+        // Define some simple rules for stemming
+        const suffixes = ["ing", "ed", "ly", "es", "s", "ment"];
+        let stemmedWord = word;
+    
+        for (let suffix of suffixes) {
+            if (word.endsWith(suffix)) {
+                stemmedWord = word.substring(0, word.length - suffix.length);
+                break;
+            }
+        }
+    
+        return stemmedWord;
+    }
+
+    let akaDictionary = {
+        'checking': ['dda']
+    };
+
+    function populatePipeIDs(pipe) {
+        let stemmedWord = stem(pipe);
+        // Check if akaDictionary has the key and if it's not undefined
+        let aka = akaDictionary && akaDictionary.hasOwnProperty(pipe) ? akaDictionary[pipe] : [];
+        return [pipe, stemmedWord, ...aka];
+    }
+
+    // Create components based on the formulas
+    const components = formulas.map((formula, index) => {
+        const usedPipes = identifyUsedPipes(formula);
+        let componentId = `component_${index}`;
+        
+        // If there are used pipes, create a unique component ID based on the pipes used
+        if (usedPipes.length > 0) {
+            componentId = usedPipes[index];
+            //componentId = usedPipes.join('_');
+        }
+
+        return {
+            id: componentId,
+            formula: formula,
+            pipeIDs: populatePipeIDs(usedPipes[index])
+        };
+    });
+
     const fileContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,13 +102,7 @@ document.getElementById('saveButton').addEventListener('click', function() {
                 primary_key: 'ID',
                 sort: { key: 'result', order: 'desc' }
             },
-            components: [
-                {
-                    id: 'loans',
-                    formula: '${editorContent}',
-                    pipeIDs: ['loan', 'lending', 'line']
-                }
-            ]
+            components: ${JSON.stringify(components, null, 4)}
         };
     </script>
     <script src="../core/loadLibraries.js"></script>
