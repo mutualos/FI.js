@@ -6,7 +6,7 @@ function loadLibrary(library, callback) {
     if (typeof library === 'string' && (library.startsWith('http://') || library.startsWith('https://'))) {
         libraryUrl = library;
     } else {
-        libraryUrl = `library/${library}.js`;
+        libraryUrl = `../library/${library}.js`;
     }
 
     script.src = libraryUrl;
@@ -78,6 +78,7 @@ function loadLibraries(libraries, finalCallback) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('starting libraries load')
     if (window.buildConfig && window.buildConfig.libraries) {
         loadLibraries(window.buildConfig.libraries, (loadedLibraries) => {
             const conflicts = detectConflicts(loadedLibraries);
