@@ -181,8 +181,8 @@ const financial = {
         },
         chargesIncome: {
             description: "Calculates the deposit account service charges",
-            implementation: function(serviceCharges, chargesWaived = null, otherCharges = null, otherChargesWaived = null) {
-                const charges = parseFloat(serviceCharges);
+            implementation: function(charges, chargesWaived = null, otherCharges = null, otherChargesWaived = null) {
+                charges = parseFloat(charges);
                 const waived = chargesWaived == null ? 0 : parseFloat(chargesWaived); 
                 const other = otherCharges == null ? 0 : parseFloat(otherCharges); 
                 const otherWaived = otherChargesWaived == null ? 0 : parseFloat(otherChargesWaived); 
@@ -191,8 +191,8 @@ const financial = {
         },
         fraudLoss: {
             description: "Calculates the deposit account's expected fraud losses",
-            implementation: function() {
-                return (libraries.attributes.capitalTarget.value * libraries.attributes.fraudLossFactor.value).toFixed(2);
+            implementation: function(balance) {
+                return (libraries.attributes.capitalTarget.value * libraries.attributes.fraudLossFactor.value * balance).toFixed(2);
             }
         } 
     },
