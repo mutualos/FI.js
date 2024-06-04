@@ -1,17 +1,29 @@
 const organization = {
     attributes: {
         taxRate: {
-            description: "The institution tax rate applied to financial calculations.",
+            description: "The institution tax rate applied to financial calculations",
             value: 0.27
+        },
+        marginTarget: {
+            description: "The institution net interest margin target",
+            value: 0.03
+        },
+        capitalTarget: {
+            description: "The institution capital to assets ratio target",
+            value: 0.10
+        },
+        fraudLossFactor: {
+            description: "ratio of fraud losses to institution total deposits",
+            value: 0.005,
         }
     },
     dictionaries: {
         loanRiskFactors: {
-            description: "Risk factors representing the risk associated with different loan types.",
+            description: "Risk factors representing the risk associated with different loan types",
             values: {"0": 1, "1": 0, "2": 0.5, "3": 1, "3W": 2, "4": 10, "5": 100, "NULL": 1}
         },
         loanTypeID: {
-            description: "Mappings of loan types to their respective IDs.",
+            description: "Mappings of loan types to the respective indentifiers",
             values: {
                 "Agriculture": [],
                 "Commercial": ["31", "32", "33", "34"], 
@@ -28,6 +40,13 @@ const organization = {
                 "Municipal": ["37"],
                 "Tax Exempt Commercial": ["40"],
                 "Tax Exempt Commercial Real Estate": ["42"]
+            }
+        },
+        ddaTypeID: {
+            description: "Mappings of checking types to the respective identifiers",
+            values: {
+                "Consumer": ["2", "4", "7", "11", "12", "14", "16", "21", "22", "23", "25", "26", "27", "28", "29", "30", "32", "36", "37", "39", "46", "48"], 
+                "Commercial": ["51", "52", "53", "54", "61", "74", "75", "76", "78", "80", "85"]
             }
         }
     }
