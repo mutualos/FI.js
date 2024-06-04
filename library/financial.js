@@ -1,14 +1,14 @@
 const financial = {
     functions: {
         interestIncome: {
-            description: "Calculates the interest income based on principal and annual rate.",
+            description: "Calculates the interest income based on principal and annual rate",
             implementation: function(principal, annualRate) {
                 console.log(principal, annualRate);
                 return principal * annualRate;
             }
         },
         remainingMonths: {
-            description: "Calculates the remaining months until maturity date.",
+            description: "Calculates the remaining months until maturity date",
             implementation: function(maturityDate) {
                 if (!maturityDate) return null;
                 const today = new Date();
@@ -18,7 +18,7 @@ const financial = {
             }
         },
         calculateLoanPayment: {
-            description: "Calculates the monthly loan payment based on principal, annual rate, and amortization months.",
+            description: "Calculates the monthly loan payment based on principal, annual rate, and amortization months",
             implementation: function(principal, annualRate, amortizationMonths) {
                 const monthlyRate = annualRate < 1 ? parseFloat(annualRate) / 12 : parseFloat(annualRate / 100) / 12;
                 if (monthlyRate === 0) {
@@ -29,7 +29,7 @@ const financial = {
             }
         },
         averagePrincipal: {
-            description: "Calculates the average principal over the loan term.",
+            description: "Calculates the average principal over the loan term",
             implementation: function(principal, annualRate, termMonths = null, amortizationMonths = null, maturityDate = null) {
                 if (parseFloat(principal) <= 0) return 0.00;
                 var monthlyRate = annualRate < 1 ? parseFloat(annualRate) / 12 : parseFloat(annualRate / 100) / 12;
@@ -57,7 +57,7 @@ const financial = {
             }
         },
         loanLossReserve: {
-            description: "Calculates the loan loss reserve based on various factors.",
+            description: "Calculates the loan loss reserve based on various factors",
             implementation: function(type, principal, annualRate, riskRating, LTV = null, guarantee = null, termMonths = null, amortizationMonths = null, maturityDate = null) {
                 //const libraries = window.libraries; // Access the libraries object directly
 				
@@ -119,7 +119,7 @@ const financial = {
             }
         },                
         originationExpense: {
-            description: "Calculates the origination expense based on loan type, principal, and term.",
+            description: "Calculates the origination expense based on loan type, principal, and term",
             implementation: function(type, principal, termMonths = null, maturityDate = null) {
                 if (typeof libraries.dictionaries.loanTypeID.values === 'object') {
                     const typeIDs = libraries.dictionaries.loanTypeID.values;
@@ -141,56 +141,94 @@ const financial = {
                         console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
                     }
                 } else {
-                    console.log('libaries are missing loanTypeID see financial.js library docs');
+                    console.log('libaries are missing loanTypeID see library docs');
                 }
             }
         },
         servicingExpense: {
-            description: "Calculates the servicing expense based on principal and term.",
+            description: "Calculates the servicing expense based on principal and term",
             implementation: function(principal, termMonths = null, maturityDate = null) {
                 if (libraries.attributes.loanServicingFactor.value) {
                     const months = maturityDate ? libraries.functions.remainingMonths.implementation(maturityDate) : termMonths;
                     let expense = principal * libraries.attributes.loanServicingFactor.value / months * 12;
                     return expense.toFixed(2);
                 } else {
-                    console.log('libaries are missing loanServicingFactor see financial.js library docs');
+                    console.log('libaries are missing loanServicingFactor see library docs');
                 }
             }
-        }
+        },
+        ddaCosts: {
+            description: "Calculates maintenance expense of checking / demand deposit accounts based on type-indentifier",
+            implementation: function(type) {
+                if (typeof libraries.dictionaries.ddaTypeID.values === 'object') {
+                    const typeIDs = libraries.dictionaries.ddaTypeID.values;
+                    let identifiedType = null;
+                    for (let key in typeIDs) {
+                        if (typeIDs[key].includes(String(type))) {
+                            identifiedType = key;
+                            break;
+                        }
+                    }
+                    if (identifiedType !== null) {
+                        return libraries.dictionaries.ddaOpenCosts.values[identifiedType].toFixed(2);
+                    } else {
+                        console.error(`type not found for libraries.dictionaries.ddaOpenCosts.values:${type}.`);
+                    }
+                } else {
+                    console.log('libaries are missing ddaTypeID see library docs');
+                }
+            } 
+        },
+        chargesIncome: {
+            description: "Calculates the deposit account service charges",
+            implementation: function(serviceCharges, chargesWaived = null, otherCharges = null, otherChargesWaived = null) {
+                const charges = parseFloat(serviceCharges);
+                const waived = chargesWaived == null ? 0 : parseFloat(chargesWaived); 
+                const other = otherCharges == null ? 0 : parseFloat(otherCharges); 
+                const otherWaived = otherChargesWaived == null ? 0 : parseFloat(otherChargesWaived); 
+                return (charges - waived + other - otherWaived).toFixed(2);
+            }
+        },
+        fraudLoss: {
+            description: "Calculates the deposit account's expected fraud losses",
+            implementation: function() {
+                return (libraries.attributes.capitalTarget.value * libraries.attributes.fraudLossFactor.value).toFixed(2);
+            }
+        } 
     },
     attributes: {
         loanServicingFactor: {
-            description: "The factor used to calculate loan servicing costs.",
+            description: "The factor used to calculate loan servicing costs",
             value: 0.0025
         },
         defaultRecoveryPerc: {
-            description: "The default recovery percentage.",
+            description: "The default recovery percentage",
             value: 0.50
         },
         minOperatingRisk: {
-            description: "The minimum operating risk percentage.",
+            description: "The minimum operating risk percentage",
             value: 0.0015
         },
         depositUnitCost: {
-            description: "The unit cost for deposits.",
+            description: "The unit cost for deposits",
             value: 2
         },
         withdrawalUnitCost: {
-            description: "The unit cost for withdrawals.",
+            description: "The unit cost for withdrawals",
             value: 0.11
         },
         ddaReserveRequired: {
-            description: "The required reserve for DDA.",
+            description: "The required fed reserve for checking accounts / demand deposit accounts(DDA)",
             value: 0.10
         },
         savingsCost: {
-            description: "The cost for savings accounts.",
+            description: "The cost for savings accounts",
             value: 48
         }
     },
     dictionaries: {
         originationFactor: {
-            description: "Origination factors for different loan types.",
+            description: "Origination factors for different loan types",
             values: {
                 "Agriculture": 0.01,
                 "Commercial": 0.01, 
@@ -248,7 +286,14 @@ const financial = {
                 "Tax Exempt Commercial": 0.0040,
                 "Tax Exempt Commercial Real Estate": 0.0024
             },
-        }
+        },
+        ddaOpenCosts: {
+            description: "checking account openning costs",
+            values: {
+                "Consumer": 84,
+                "Commercial": 109
+            }
+        },
     }
 }
 window.financial = financial; // Make it globally accessible
