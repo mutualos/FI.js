@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copernicus Single Page Application</title>
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <div id="spinnerOverlay" class="spinner-overlay">
+        <div class="spinner"></div>
+    </div>
+    <div id="resultsTableContainer" class="table-container"></div> <!-- Container for results table -->
+
+    <footer class="fixed-footer">
+        <input type="file" id="csvPipe" accept=".csv" multiple>
+        <button id="run">
+            <img src="../JS_box.png" class="button-icon">
+            Run
+        </button>
+    </footer>
+    <script>
+        window.buildConfig = {
+            libraries: ['organization', 'financial', 'https://fijs.net/api/trates/'],
+            version: '1.0.0',
+            presentation: {
+                columns: [
+                    { header: 'ID', key: 'ID', type: 'integer' },
+                    { header: 'Principal', key: 'principal', type: 'currency' },
+                    { header: 'Balance', key: 'balance', type: 'currency' },
+                    { header: 'Result', key: 'result', type: 'float' }
+                ],
+                primary_key: 'ID',
+                sort: { key: 'result', order: 'desc' }
+            },
+            components: [
+                {
+                    id: 'loans',
+                    formula: '((annualRate - trates:12)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve',
+                    pipeIDs: ['loan', 'lending', 'line']
+                },
+                {
+                    id: 'checking',
+                    formula: 'balance * 0.5',
+                    pipeIDs: ['check', 'dda']
+                }
+            ]
+        };
+    </script>
+    <script src="../core/loadLibraries.js"></script>
+    <script src="../organization/pipes.js"></script>
+    <script src="../core/main.js"></script>
+</body>
+</html>
