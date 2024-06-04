@@ -19,7 +19,7 @@ window.buildConfig = {
         },
         {
             id: 'checking',
-            formula: 'balance * 0.5',
+            formula: '(chargesIncome - interestExpense - (deposits * depositUnitCost) * 12) + balance * ((1 - ddaReserveRequired) * marginTarget - fraudLoss - ddaCosts) * (1-taxRate)',
             pipeIDs: ['check', 'dda']
         }
     ]
