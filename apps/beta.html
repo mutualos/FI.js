@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Copernicus Single Page Application</title>
     <link rel="stylesheet" href="../styles/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div id="spinnerOverlay" class="spinner-overlay">
         <div class="spinner"></div>
     </div>
+    <div id="chartContainer">
+    </div>
     <div id="resultsTableContainer" class="table-container"></div> <!-- Container for results table -->
-
     <footer class="fixed-footer">
         <input type="file" id="csvPipe" accept=".csv" multiple>
         <button id="run">
@@ -28,10 +30,15 @@
                     { header: 'ID', key: 'ID', type: 'integer' },
                     { header: 'Principal', key: 'principal', type: 'currency' },
                     { header: 'Balance', key: 'balance', type: 'currency' },
+                    { header: 'Branch', key: 'branch', type: 'integer' },
                     { header: 'Result', key: 'result', type: 'float' }
                 ],
                 primary_key: 'ID',
-                sort: { key: 'result', order: 'desc' }
+                sort: { key: 'result', order: 'desc' },
+                chart: {
+                    key: 'branch', // The key to group by for charting
+                    label: 'Results by Branch' // Label for the chart
+                }
             },
             components: [
                 {
@@ -41,7 +48,7 @@
                 },
                 {
                     id: 'checking',
-                    formula: 'balance * 0.5',
+                    formula: '((chargesIncome - interestExpense - deposits * depositUnitCost) * 12 + balance * (1 - ddaReserveRequired) * marginTarget - fraudLoss - ddaCosts) * (1-taxRate)',
                     pipeIDs: ['check', 'dda']
                 }
             ]
