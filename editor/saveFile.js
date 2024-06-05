@@ -39,7 +39,8 @@ document.getElementById('saveButton').addEventListener('click', function() {
     }
 
     let akaDictionary = {
-        'checking': ['dda']
+        'checking': ['dda'],
+        'certificate': ['CD', 'COD']
     };
 
     function populatePipeIDs(pipe) {
