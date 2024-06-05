@@ -196,7 +196,7 @@ function displayResults(results) {
                         combinedResults[primaryKeyValue][column.key] = parseFloat(currentVal) + parseFloat(newVal);
                     } else if (!currentVal) {
                         combinedResults[primaryKeyValue][column.key] = newVal;
-                    } else if (currentVal.includes("undefined") || currentVal.includes("NaN")) {
+                    } else if (String(currentVal).includes("undefined") || String(currentVal).includes("NaN")) {
                         combinedResults[primaryKeyValue][column.key] = parseFloat(newVal) || 0;
                     } else if (!newVal || isNaN(newVal)) {
                         combinedResults[primaryKeyValue][column.key] = currentVal;
