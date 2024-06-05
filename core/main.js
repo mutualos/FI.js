@@ -9,7 +9,6 @@ document.addEventListener('allLibrariesLoaded', function(e) {
         '123456790,2017-06-15,2037-07-01,1,4,92,100000.00,1466.67,0.0625,0,3,0'
     ];
     const pipeFormula = '((annualRate - trates:remainingMonths)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
-    //const pipeFormula = 'ID';
     const pipeID = 'loans'; // Assuming 'loans' is a valid pipeID
     allResults = processFormula(dataLines, headers, pipeFormula, pipeID, loadedLibraries);
     displayResults(allResults);
@@ -20,7 +19,7 @@ document.addEventListener('allLibrariesLoaded', function(e) {
             console.log("No files selected.");
             return;
         }
-	showSpinner();
+    
         const processingPromises = [];
         let allResults = [];
     
@@ -85,7 +84,7 @@ function evalFormula(data, formula, translations, libraries) {
             return match; // Return unchanged if not an attribute
         });
 
-        //console.log('After attributes replacement:', processedFormula); // Debugging output
+        console.log('After attributes replacement:', processedFormula); // Debugging output
 
         // Step 2: Replace functions
         processedFormula = processedFormula.replace(/\b(\w+)\b/g, (match) => {
@@ -101,15 +100,15 @@ function evalFormula(data, formula, translations, libraries) {
                 }).join(', ');
 
                 const functionCall = `libraries.functions.${match}.implementation(${argsValues})`;
-                //console.log('Function call:', functionCall);
+                console.log('Function call:', functionCall);
                 const functionResult = eval(functionCall);
-                //console.log('Function result:', functionResult);
+                console.log('Function result:', functionResult);
                 return functionResult;
             }
             return match; // Return unchanged if not a function
         });
 
-        //console.log('After functions replacement:', processedFormula); // Debugging output
+        console.log('After functions replacement:', processedFormula); // Debugging output
 
         // Step 3: Process dictionary lookups
         processedFormula = processedFormula.replace(/\b(\w+:\s*\w+)\b/g, (match) => {
@@ -123,7 +122,7 @@ function evalFormula(data, formula, translations, libraries) {
         console.log('Final processed formula:', processedFormula); // Debugging output
         return eval(processedFormula); // Evaluate the final formula string
     } catch (error) {
-        console.log(`Error evaluating formula. data: '${data}' error msg:`, error);
+        console.error('Error evaluating formula:', error);
         return undefined;
     }
 }
@@ -135,26 +134,22 @@ function processFormula(dataLines, headers, pipeFormula, pipeID, libraries) {
     const columns = window.buildConfig.presentation.columns.map(col => col.key);
 
     dataLines.forEach(line => {
-	//const values = line.split(',').map(e => e === '' ? null : e);
-	// Split the line by comma, but keep values enclosed in single or double quotes together
-         const values = line.match(/(?:'[^']*'|"[^"]*"|[^,])+/g).map(value => value.trim().replace(/^['"]|['"]$/g, '').replace(/,/g, "")).map(e => e === '' ? null : e);
-
+        const values = line.split(',');
         const dataObject = translatedHeaders.reduce((obj, header, index) => {
             obj[header] = values[index] ? values[index].trim() : null; // Assign values to translated headers
             return obj;
         }, {});
-		
-	const result = evalFormula(dataObject, pipeFormula, translations[pipeID], libraries);
-	const id = dataObject['ID'] || dataObject[Object.keys(dataObject)[0]]; // Use 'ID' or first key if 'ID' is not available
+        const result = evalFormula(dataObject, pipeFormula, translations[pipeID], libraries);
+        const id = dataObject['ID'] || dataObject[Object.keys(dataObject)[0]]; // Use 'ID' or first key if 'ID' is not available
 
-	const limitedDataObject = { id };
-	columns.forEach(column => {
-		if (column in dataObject) {
-			limitedDataObject[column] = dataObject[column];
-		}
-	});
-		
-	results.push({ ...limitedDataObject, result }); // Store result with ID and required columns
+        const limitedDataObject = { id };
+        columns.forEach(column => {
+            if (column in dataObject) {
+                limitedDataObject[column] = dataObject[column];
+            }
+        });
+
+        results.push({ ...limitedDataObject, result }); // Store result with ID and required columns
     });
 
     return results; // Return results to be resolved
@@ -172,6 +167,7 @@ function displayResults(results) {
     const columns = window.buildConfig.presentation.columns;
     const primaryKey = window.buildConfig.presentation.primary_key;
     const sortConfig = window.buildConfig.presentation.sort;
+    const chartConfig = window.buildConfig.presentation.chart;
 
     // Create table headers based on the presentation settings
     columns.forEach(column => {
@@ -185,6 +181,7 @@ function displayResults(results) {
 
     // Combine rows with the same primary key
     const combinedResults = {};
+
     results.forEach(result => {
         const primaryKeyValue = result[primaryKey];
         if (!combinedResults[primaryKeyValue]) {
@@ -199,7 +196,7 @@ function displayResults(results) {
                         combinedResults[primaryKeyValue][column.key] = parseFloat(currentVal) + parseFloat(newVal);
                     } else if (!currentVal) {
                         combinedResults[primaryKeyValue][column.key] = newVal;
-                    } else if (String(currentVal).includes("undefined") || String(currentVal).includes("NaN")) {
+                    } else if (currentVal.includes("undefined") || currentVal.includes("NaN")) {
                         combinedResults[primaryKeyValue][column.key] = parseFloat(newVal) || 0;
                     } else if (!newVal || isNaN(newVal)) {
                         combinedResults[primaryKeyValue][column.key] = currentVal;
@@ -279,9 +276,48 @@ function displayResults(results) {
 
     table.appendChild(tbody);
     tableContainer.appendChild(table);
+
+    // Create the chart container and canvas
+    const chartContainer = document.getElementById('chartContainer');
+    chartContainer.innerHTML = '<canvas id="branch_chart"></canvas>';
+    const ctx = document.getElementById('branch_chart').getContext('2d');
+
+    // Prepare data for the chart
+    const chartResults = {};
+    combinedResultsArray.forEach(result => {
+        const chartValue = result[chartConfig.key];
+        if (chartResults[chartValue]) {
+            chartResults[chartValue] += parseFloat(result.result);
+        } else {
+            chartResults[chartValue] = parseFloat(result.result);
+        }
+    });
+
+    const chartLabels = Object.keys(chartResults);
+    const chartData = Object.values(chartResults);
+
+    // Create the chart
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: chartConfig.label,
+                data: chartData,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
 }
-
-
 
 function showSpinner() {
     document.getElementById('spinnerOverlay').style.visibility = 'visible';
@@ -294,6 +330,7 @@ function hideSpinner() {
 }
 
 function processLargePipeAsync(csvText, pipeFormula, pipeID, libraries) {
+    showSpinner();
     return new Promise((resolve, reject) => {
         try {
             const dataLines = csvText.split('\n').filter(line => line.trim());
