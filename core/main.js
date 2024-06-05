@@ -8,7 +8,7 @@ document.addEventListener('allLibrariesLoaded', function(e) {
         '123456790,2017-06-15,2037-07-01,1,4,92,161376.77,1466.67,0.0625,0,3,0',
         '123456790,2017-06-15,2037-07-01,1,4,92,100000.00,1466.67,0.0625,0,3,0'
     ];
-    const pipeFormula = '((annualRate - trates:remainingMonths)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
+    const pipeFormula = '((annualRate - (trates:remainingMonths + marginTarget)/2)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
     const pipeID = 'loans'; // Assuming 'loans' is a valid pipeID
     allResults = processFormula(dataLines, headers, pipeFormula, pipeID, loadedLibraries);
     displayResults(allResults);
