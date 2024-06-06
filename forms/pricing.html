@@ -101,16 +101,15 @@
             <!-- Tab Navs -->
             <ul class="nav nav-tabs" id="formsTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab" aria-controls="personal" aria-selected="true">Loan Terms</button>
+                    <button class="nav-link active" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab" aria-controls="tab1" aria-selected="true">Loan Terms</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="credit-tab" data-bs-toggle="tab" data-bs-target="#credit" type="button" role="tab" aria-controls="credit" aria-selected="false">Options & Submit</button>
+                    <button class="nav-link" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab" aria-controls="tab2" aria-selected="false">Options & Submit</button>
                 </li>
             </ul>
             <!-- Tab Content -->
             <div class="tab-content" id="formContent">
-                <!-- Personal Information Tab -->
-                <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
+                <div class="tab-pane fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
                     <form class="p-3">
                         <div class="mb-3">
                             <select class="form-select" name="Type_select" id="Type_select" aria-label="Default select">
@@ -124,36 +123,35 @@
                                 <option value="Letter of Credit">Letter of Credit</option>
                             </select>
                         </div>
-                        <input type="hidden" name="Type" id="Type" value="" />
+                        <input type="hidden" name="type" id="type" value="" />
                         <div class="mb-3">
-                            <label for="Principal" class="form-label">Principal</label>
-                            <input type="number" class="form-control" name="Principal" required>
+                            <label for="principal" class="form-label">Principal</label>
+                            <input type="number" class="form-control" name="principal" required>
                         </div>
                         <div class="mb-3">
-                            <label for="Term" class="form-label">Contractual Term</label>
-                            <input type="number" class="form-control" name="Term" required>
+                            <label for="termMonths" class="form-label">Contractual Term</label>
+                            <input type="number" class="form-control" name="termMonths" min="0" required>
                         </div>
                         <div class="mb-3">
-                            <label for="Amortization" class="form-label">Amortization</label>
-                            <input type="number" class="form-control" name="Amortization">
+                            <label for="amortization" class="form-label">Amortization</label>
+                            <input type="number" class="form-control" name="amortization">
                         </div>
                         <div class="mb-3">
-                            <label for="InterestRate" class="form-label">Interest Rate (%)</label>
-                            <input type="number" class="form-control percent-input" name="InterestRate" required>
+                            <label for="annualRate" class="form-label">Interest Rate (%)</label>
+                            <input type="number" class="form-control percent-input" name="annualRate" required>
                         </div>
                     </form>
                     <button type="button" class="btn btn-success next-tab">Next</button>
                 </div>
-                <!-- Credit Details Tab -->
-                <div class="tab-pane fade" id="credit" role="tabpanel" aria-labelledby="credit-tab">
+                <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
                     <form class="p-3">
                         <div class="mb-3">
-                            <label for="Fees" class="form-label">Collected Fees</label>
-                            <input type="number" class="form-control" name="Fees" value="0">
+                            <label for="fees" class="form-label">Collected Fees</label>
+                            <input type="number" class="form-control" name="fees" value="0">
                         </div>
                         <div class="mb-3">
-                            <label for="Reprice" class="form-label">Variable rate - months to reprice</label>
-                            <input type="number" class="form-control" name="Reprice">
+                            <label for="reprice" class="form-label">Variable rate - months to reprice</label>
+                            <input type="number" class="form-control" name="reprice">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -201,6 +199,22 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
+         window.buildConfig = {
+            libraries: ['organization', 'financial', 'https://fijs.net/api/trates/'],
+            version: '1.0.0',
+            presentation: {
+                columns: [
+                    { header: 'Result', key: 'result', type: 'float' }
+                ]
+            },
+            components: [
+                {
+                    id: 'loans',
+                    formula: '((annualRate - trates:termMonths) * principal + fees - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve',
+                },
+            ]
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             const nextButtons = document.querySelectorAll('.next-tab');
             const prevButtons = document.querySelectorAll('.prev-tab');
@@ -305,7 +319,7 @@
             event.preventDefault(); // Prevent default form submission behavior
             let isFormValid = true; // Assume form is valid at the start
             let combinedFormData = {}; // Object to hold combined form data
-            document.querySelector('#Type').value = document.querySelector('#Type_select').value;
+            document.querySelector('#type').value = document.querySelector('#Type_select').value;
             document.querySelector('#Type_select').disabled = true;
             // Select only forms within the #formContent div
             const forms = document.querySelectorAll('#formContent form');
@@ -347,11 +361,47 @@
         });
 
         function processForm(formData) {
-            console.log('Processing combined form data: ', formData);
-            const headers = Object.keys(formData);
-            const dataString = Object.values(formData).join(',');
-            const dataValuesArray = [dataString]; 
-            console.log(headers, dataString, dataValuesArray)
+            const processedData = {};
+            for (let key in formData) {
+                if (formData.hasOwnProperty(key)) {
+                    let value = formData[key];
+
+                    // Check if the value is an empty string
+                    if (value === "") {
+                        processedData[key] = value;
+                        continue;
+                    }
+
+                    // Check if the value should be converted to an integer
+                    if (!isNaN(value) && Number.isInteger(parseFloat(value))) {
+                        processedData[key] = parseInt(value, 10);
+                    } 
+                    // Check if the value should be converted to a float
+                    else if (!isNaN(value) && !Number.isInteger(parseFloat(value))) {
+                        processedData[key] = parseFloat(value);
+                    } 
+                    // Keep the value as a string
+                    else {
+                        processedData[key] = value;
+                    }
+                }
+            }
+            console.log('Original form data: ', formData);
+            console.log('Processed form data: ', processedData);
+            const headers = Object.keys(processedData);
+            const translations = {};
+            for (const key in headers) {
+                if (headers.hasOwnProperty(key)) {
+                    const value = headers[key];
+                    translations[value] = value;
+                }
+            }
+            const formula = window.buildConfig.components[0].formula;
+            console.log('processedData', processedData);
+            console.log('formula', formula);
+            console.log('translations', translations);
+            const result = evalFormula(processedData, formula, translations, libraries);
+            console.log('result', result);
         }
     </script>
     <script src="../core/loadLibraries.js"></script>
