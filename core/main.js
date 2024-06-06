@@ -1,7 +1,7 @@
 document.addEventListener('allLibrariesLoaded', function(e) {
     const loadedLibraries = e.detail;
     console.log('All libraries loaded:', loadedLibraries);
-    
+    /*
     // Testing-demo data 
     const headers = ["Portfolio", "Date_Opened", "Maturity_Date", "Branch_Number", "Class_Code", "Opened_by_Resp_Code", "Principal", "Amount_Last_Payment", "Rate_Over_Split", "Status_Code", "Risk_Rating", "Late_Charges"];
     const dataLines = [
@@ -9,11 +9,12 @@ document.addEventListener('allLibrariesLoaded', function(e) {
         '123456790,2017-06-15,2037-07-01,1,4,92,161376.77,1466.67,0.0625,0,3,0',
         '123456790,2017-06-15,2037-07-01,1,4,92,100000.00,1466.67,0.0625,0,3,0'
     ];
+    
     const pipeFormula = '((annualRate - (trates:branch + marginTarget)/2)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
     const pipeID = 'loans'; // Assuming 'loans' is a valid pipeID
     allResults = processFormula(dataLines, headers, pipeFormula, pipeID, loadedLibraries);
     displayResults(allResults);
-    
+    */
 
     const runButton = document.getElementById('run');
     if (runButton) {
@@ -127,13 +128,17 @@ function evalFormula(data, formula, translations, libraries) {
         */
         // Step 3: Process dictionary lookups
         processedFormula = processedFormula.replace(/\b(\w+):\s*['"]?(\w+)['"]?\b/g, (match, dictName, dictKey) => {
+            console.log('Dictionary Lookup - Match:', match);
+            console.log('Dictionary Lookup - dictName:', dictName);
+            console.log('Dictionary Lookup - dictKey:', dictKey);
             if (libraries.dictionaries && libraries.dictionaries[dictName] && libraries.dictionaries[dictName].values[dictKey] !== undefined) {
-                return libraries.dictionaries[dictName].values[dictKey];
+                const dictValue = libraries.dictionaries[dictName].values[dictKey];
+                console.log('Dictionary Lookup - dictValue:', dictValue);
+                return `${dictValue}`;
             }
             throw new Error(`Dictionary key '${dictKey}' not found in '${dictName}'`);
         });
-
-
+        processedFormula = processedFormula.replace(/['"]+/g, ''); //// Remove any trailing quotes introduced during replacements
         console.log('Final processed formula:', processedFormula); // Debugging output
         return eval(processedFormula); // Evaluate the final formula string
     } catch (error) {
