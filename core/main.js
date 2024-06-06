@@ -1,6 +1,7 @@
 document.addEventListener('allLibrariesLoaded', function(e) {
     const loadedLibraries = e.detail;
     console.log('All libraries loaded:', loadedLibraries);
+    
     // Testing-demo data 
     const headers = ["Portfolio", "Date_Opened", "Maturity_Date", "Branch_Number", "Class_Code", "Opened_by_Resp_Code", "Principal", "Amount_Last_Payment", "Rate_Over_Split", "Status_Code", "Risk_Rating", "Late_Charges"];
     const dataLines = [
@@ -8,47 +9,50 @@ document.addEventListener('allLibrariesLoaded', function(e) {
         '123456790,2017-06-15,2037-07-01,1,4,92,161376.77,1466.67,0.0625,0,3,0',
         '123456790,2017-06-15,2037-07-01,1,4,92,100000.00,1466.67,0.0625,0,3,0'
     ];
-    const pipeFormula = '((annualRate - (trates:remainingMonths + marginTarget)/2)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
+    const pipeFormula = '((annualRate - (trates:branch + marginTarget)/2)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
     const pipeID = 'loans'; // Assuming 'loans' is a valid pipeID
     allResults = processFormula(dataLines, headers, pipeFormula, pipeID, loadedLibraries);
     displayResults(allResults);
+    
 
-    document.getElementById('run').addEventListener('click', () => {
-        const files = document.getElementById('csvPipe').files;
-        if (!files.length) {
-            console.log("No files selected.");
-            return;
-        }
-    
-        const processingPromises = [];
-        let allResults = [];
-    
-        Array.from(files).forEach(file => {
-            const result = getFormulaAndPipeIDByComponent(file.name);
-            if (result) {
-                const { formula, pipeID } = result;
-                console.log('Processing:', pipeID);
-                processingPromises.push(
-                    readFileAsync(file, formula, pipeID, loadedLibraries)
-                    .then(fileResults => {
-                        allResults = allResults.concat(fileResults);
-                    })
-                );
-            } else {
-                console.error(`No matching formula for file ${file.name}. Skipping.`);
+    const runButton = document.getElementById('run');
+    if (runButton) {
+        runButton.addEventListener('click', () => {
+            const files = document.getElementById('csvPipe').files;
+            if (!files.length) {
+                console.log("No files selected.");
+                return;
             }
-        });
-    
-        Promise.all(processingPromises)
-            .then(() => {
-                console.log('All files processed successfully');
-                displayResults(allResults);
-            })
-            .catch(error => {
-                console.error('Error processing files:', error);
+        
+            const processingPromises = [];
+            let allResults = [];
+        
+            Array.from(files).forEach(file => {
+                const result = getFormulaAndPipeIDByComponent(file.name);
+                if (result) {
+                    const { formula, pipeID } = result;
+                    console.log('Processing:', pipeID);
+                    processingPromises.push(
+                        readFileAsync(file, formula, pipeID, loadedLibraries)
+                        .then(fileResults => {
+                            allResults = allResults.concat(fileResults);
+                        })
+                    );
+                } else {
+                    console.error(`No matching formula for file ${file.name}. Skipping.`);
+                }
             });
-    });
-    
+        
+            Promise.all(processingPromises)
+                .then(() => {
+                    console.log('All files processed successfully');
+                    displayResults(allResults);
+                })
+                .catch(error => {
+                    console.error('Error processing files:', error);
+                });
+        });
+    }
 });
 
 function getFormulaAndPipeIDByComponent(fileName) {
@@ -69,6 +73,7 @@ function getFunctionArgs(func) {
 }
 
 function evalFormula(data, formula, translations, libraries) {
+    console.log('data', data)
     try {
         // Step 1: Replace attributes
         let processedFormula = formula.replace(/\b(\w+)\b/g, (match) => {
@@ -110,6 +115,7 @@ function evalFormula(data, formula, translations, libraries) {
 
         console.log('After functions replacement:', processedFormula); // Debugging output
 
+        /*
         // Step 3: Process dictionary lookups
         processedFormula = processedFormula.replace(/\b(\w+:\s*\w+)\b/g, (match) => {
             const [dictName, dictKey] = match.split(':').map(s => s.trim());
@@ -118,6 +124,15 @@ function evalFormula(data, formula, translations, libraries) {
             }
             throw new Error(`Dictionary key '${dictKey}' not found in '${dictName}'`);
         });
+        */
+        // Step 3: Process dictionary lookups
+        processedFormula = processedFormula.replace(/\b(\w+):\s*['"]?(\w+)['"]?\b/g, (match, dictName, dictKey) => {
+            if (libraries.dictionaries && libraries.dictionaries[dictName] && libraries.dictionaries[dictName].values[dictKey] !== undefined) {
+                return libraries.dictionaries[dictName].values[dictKey];
+            }
+            throw new Error(`Dictionary key '${dictKey}' not found in '${dictName}'`);
+        });
+
 
         console.log('Final processed formula:', processedFormula); // Debugging output
         return eval(processedFormula); // Evaluate the final formula string
