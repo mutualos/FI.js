@@ -59,18 +59,21 @@ const financial = {
         loanLossReserve: {
             description: "Calculates the loan loss reserve based on various factors",
             implementation: function(type, principal, annualRate, riskRating, LTV = null, guarantee = null, termMonths = null, amortizationMonths = null, maturityDate = null) {
-                //const libraries = window.libraries; // Access the libraries object directly
-				
+                //const libraries = window.libraries; // Access the libraries object directly				
                 if (parseFloat(principal) <= 0) return 0.00;
                 if (typeof libraries.dictionaries.loanTypeID.values === 'object') {
-                    const typeIDs = libraries.dictionaries.loanTypeID.values;
                     let identifiedType = null;
-                    for (let key in typeIDs) {
-                        if (typeIDs[key].includes(String(type))) {
-                            identifiedType = key;
-                            break;
+                    if (type in libraries.dictionaries.loanTypeID.values) {
+                        identifiedType = type;
+                    } else {
+                        const typeIDs = libraries.dictionaries.loanTypeID.values;
+                        for (let key in typeIDs) {
+                            if (typeIDs[key].includes(String(type))) {
+                                identifiedType = key;
+                                break;
+                            }
                         }
-                    }
+                    }   
                     if (identifiedType !== null) {
                         const expectedLoss = libraries.dictionaries.loanDefaultRates.values[identifiedType]; 
                         let riskFactor = 1;
@@ -122,12 +125,16 @@ const financial = {
             description: "Calculates the origination expense based on loan type, principal, and term",
             implementation: function(type, principal, termMonths = null, maturityDate = null) {
                 if (typeof libraries.dictionaries.loanTypeID.values === 'object') {
-                    const typeIDs = libraries.dictionaries.loanTypeID.values;
                     let identifiedType = null;
-                    for (let key in typeIDs) {
-                        if (typeIDs[key].includes(String(type))) {
-                            identifiedType = key;
-                            break;
+                    if (type in libraries.dictionaries.loanTypeID.values) {
+                        identifiedType = type;
+                    } else {
+                        const typeIDs = libraries.dictionaries.loanTypeID.values;
+                        for (let key in typeIDs) {
+                            if (typeIDs[key].includes(String(type))) {
+                                identifiedType = key;
+                                break;
+                            }
                         }
                     }
                     if (identifiedType !== null) {
