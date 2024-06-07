@@ -80,8 +80,8 @@ document.getElementById('saveButton').addEventListener('click', function() {
     <div id="spinnerOverlay" class="spinner-overlay">
         <div class="spinner"></div>
     </div>
+    <div id="chartContainer"></div>
     <div id="resultsTableContainer" class="table-container"></div> <!-- Container for results table -->
-
     <footer class="fixed-footer">
         <input type="file" id="csvPipe" accept=".csv" multiple>
         <button id="run">
