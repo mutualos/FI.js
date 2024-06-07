@@ -9,12 +9,12 @@ document.addEventListener('allLibrariesLoaded', function(e) {
         '123456790,2017-06-15,2037-07-01,1,4,92,161376.77,1466.67,0.0625,0,3,0',
         '123456790,2017-06-15,2037-07-01,2,4,92,100000.00,1466.67,0.0625,0,3,0'
     ];
-    */
+    
     const pipeFormula = '((annualRate - (trates:branch + marginTarget)/2)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
     const pipeID = 'loans'; // Assuming 'loans' is a valid pipeID
     allResults = processFormula(dataLines, headers, pipeFormula, pipeID, loadedLibraries);
     displayResults(allResults);
-
+    */
     const runButton = document.getElementById('run');
     if (runButton) {
         runButton.addEventListener('click', () => {
@@ -301,46 +301,48 @@ function displayResults(results) {
     table.appendChild(tbody);
     tableContainer.appendChild(table);
 
-    // Create the chart container and canvas
-    const chartContainer = document.getElementById('chartContainer');
-    chartContainer.innerHTML = '<canvas id="branch_chart"></canvas>';
-    const ctx = document.getElementById('branch_chart').getContext('2d');
+    if (window.buildConfig.presentation.chart) {
+        // Create the chart container and canvas
+        const chartContainer = document.getElementById('chartContainer');
+        chartContainer.innerHTML = '<canvas id="branch_chart"></canvas>';
+        const ctx = document.getElementById('branch_chart').getContext('2d');
 
-    // Prepare data for the chart
-    const chartResults = {};
-    combinedResultsArray.forEach(result => {
-        const chartValue = result[chartConfig.key];
-        if (chartResults[chartValue]) {
-            chartResults[chartValue] += parseFloat(result.result);
-        } else {
-            chartResults[chartValue] = parseFloat(result.result);
-        }
-    });
+        // Prepare data for the chart
+        const chartResults = {};
+        combinedResultsArray.forEach(result => {
+            const chartValue = result[chartConfig.key];
+            if (chartResults[chartValue]) {
+                chartResults[chartValue] += parseFloat(result.result);
+            } else {
+                chartResults[chartValue] = parseFloat(result.result);
+            }
+        });
 
-    const chartLabels = Object.keys(chartResults);
-    const chartData = Object.values(chartResults);
+        const chartLabels = Object.keys(chartResults);
+        const chartData = Object.values(chartResults);
 
-    // Create the chart
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: chartConfig.label,
-                data: chartData,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
+        // Create the chart
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: chartConfig.label,
+                    data: chartData,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 }
 
 function showSpinner() {
