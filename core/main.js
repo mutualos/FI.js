@@ -7,14 +7,13 @@ document.addEventListener('allLibrariesLoaded', function(e) {
     const dataLines = [
         '123456789,2018-06-15,2038-07-01,1,4,92,161376.77,1466.67,0.0625,0,3,0',
         '123456790,2017-06-15,2037-07-01,1,4,92,161376.77,1466.67,0.0625,0,3,0',
-        '123456790,2017-06-15,2037-07-01,1,4,92,100000.00,1466.67,0.0625,0,3,0'
+        '123456790,2017-06-15,2037-07-01,2,4,92,100000.00,1466.67,0.0625,0,3,0'
     ];
-    
+    */
     const pipeFormula = '((annualRate - (trates:branch + marginTarget)/2)  * averagePrincipal - originationExpense - servicingExpense) * (1 - taxRate) - loanLossReserve'; // Example formula
     const pipeID = 'loans'; // Assuming 'loans' is a valid pipeID
     allResults = processFormula(dataLines, headers, pipeFormula, pipeID, loadedLibraries);
     displayResults(allResults);
-    */
 
     const runButton = document.getElementById('run');
     if (runButton) {
@@ -211,8 +210,9 @@ function displayResults(results) {
                 if (column.key !== primaryKey) {
                     const currentVal = combinedResults[primaryKeyValue][column.key];
                     const newVal = result[column.key];
-
-                    if (!isNaN(parseFloat(newVal)) && !isNaN(parseFloat(currentVal))) {
+                    if (column.type === 'category') {
+                        combinedResults[primaryKeyValue][column.key] = newVal;
+                    } else if (!isNaN(parseFloat(newVal)) && !isNaN(parseFloat(currentVal))) {
                         combinedResults[primaryKeyValue][column.key] = parseFloat(currentVal) + parseFloat(newVal);
                     } else if (!currentVal) {
                         combinedResults[primaryKeyValue][column.key] = newVal;
@@ -251,7 +251,7 @@ function displayResults(results) {
                 value = '';
             } else {
                 switch (column.type) {
-                    case 'integer':
+                    case 'integer': 
                         value = parseInt(value, 10);
                         if (isNaN(value)) value = 0;
                         break;
@@ -277,6 +277,10 @@ function displayResults(results) {
                         break;
                     case 'upper':
                         value = value.toUpperCase();
+                        break;
+                    case 'category': 
+                        value = parseInt(value, 10);
+                        if (isNaN(value)) value = 0;
                         break;
                     default:
                         value = value;
