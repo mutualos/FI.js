@@ -127,12 +127,12 @@ function evalFormula(data, formula, translations, libraries) {
         */
         // Step 3: Process dictionary lookups
         processedFormula = processedFormula.replace(/\b(\w+):\s*['"]?(\w+)['"]?\b/g, (match, dictName, dictKey) => {
-            console.log('Dictionary Lookup - Match:', match);
-            console.log('Dictionary Lookup - dictName:', dictName);
-            console.log('Dictionary Lookup - dictKey:', dictKey);
+            //console.log('Dictionary Lookup - Match:', match);
+            //console.log('Dictionary Lookup - dictName:', dictName);
+            //console.log('Dictionary Lookup - dictKey:', dictKey);
             if (libraries.dictionaries && libraries.dictionaries[dictName] && libraries.dictionaries[dictName].values[dictKey] !== undefined) {
                 const dictValue = libraries.dictionaries[dictName].values[dictKey];
-                console.log('Dictionary Lookup - dictValue:', dictValue);
+                //console.log('Dictionary Lookup - dictValue:', dictValue);
                 return `${dictValue}`;
             }
             throw new Error(`Dictionary key '${dictKey}' not found in '${dictName}'`);
