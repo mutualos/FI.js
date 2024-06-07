@@ -200,7 +200,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
          window.buildConfig = {
-            libraries: ['organization', 'financial', 'https://fijs.net/api/trates/'],
+            libraries: ['organization', 'financial', 'https://fijs.net/api/trates/', 'fiDashboard'],
             version: '1.0.0',
             presentation: {
                 columns: [
@@ -218,20 +218,26 @@
         // Thinking about configuring buildConfig.presentation dashboard and forms.
         // Let's complete the Grade -- this will need to be much more standardized
         function gradeResult(result, formData, libraries) {
-            console.log(result, formData, libraries.functions.averagePrincipal.implementation(formData.principal, formData.annualRate, formData.termMonths, formData.amortization));
-            //libraries.functions.${match}.implementation(${argsValues})`;
-            /*
-            const [midValue, chartValue] = fiFunctions.gradeROE(evalValue, fiFunctions.averagePrincipal(formData.Principal, formData.InterestRate, formData.Term, formData.Amortization), fiContainer.objects.capital_target, fiContainer.objects.ROE_hurdle);
-            //let midValue = fiFunctions.gradeROE(evalValue, fiFunctions.averagePrincipal(formData.Principal, formData.InterestRate, formData.Term, formData.Amortization), fiContainer.objects.capital_target, fiContainer.objects.ROE_hurdle);
-            const marker = chartValue / fiContainer.objects.ROE_hurdle * 75; //75 represents the visual hurdle
-            console.log ('marker:', chartValue, fiContainer.objects.ROE_hurdle);
+            const averagePrincipal = libraries.functions.averagePrincipal.implementation(formData.principal, formData.annualRate, formData.termMonths, formData.amortization);
+            const [midValue, chartValue] = libraries.functions.gradeROE.implementation(result, averagePrincipal, libraries.attributes.capitalTarget.value, libraries.attributes.hurdleRate.value);
+            const marker = chartValue /  libraries.attributes.hurdleRate.value * 75; //75 represents the visual hurdle
+            console.log ('marker:', chartValue, libraries.attributes.hurdleRate.value);
             updateMarkerPosition(marker);
             document.querySelector('#dashMid').innerHTML = midValue;
-            document.querySelector('#dashRight').innerHTML = fiFunctions.returnOnEquity(evalValue, fiFunctions.averagePrincipal(formData.Principal, formData.InterestRate, formData.Term, formData.Amortization), fiContainer.objects.capital_target) + '%';
-            */
+            document.querySelector('#dashRight').innerHTML = libraries.functions.returnOnEquity.implementation(result, averagePrincipal, libraries.attributes.capitalTarget.value) + '%';
         };
-    
 
+        function updateMarkerPosition(marker) {
+            marker = marker < 1 ? marker * 100 : marker; 
+            marker = Math.max(0, Math.min(100, marker));
+            // Convert the marker value to a percentage of the total width
+            const markerPositionPercent = marker;
+        
+            // Find the marker element and update its position
+            const markerElement = document.querySelector('.progress-marker');
+            markerElement.style.left = `${markerPositionPercent}%`;
+        }
+    
         document.addEventListener('DOMContentLoaded', function() {
             const nextButtons = document.querySelectorAll('.next-tab');
             const prevButtons = document.querySelectorAll('.prev-tab');
@@ -419,6 +425,7 @@
             console.log('translations', translations);
             const result = evalFormula(processedData, formula, translations, libraries);
             console.log('result', result);
+            document.querySelector('#dashLeft').innerHTML = result.toFixed(2);
             gradeResult(result, formData, libraries);
         }
     </script>
