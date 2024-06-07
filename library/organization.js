@@ -15,6 +15,10 @@ const organization = {
         fraudLossFactor: {
             description: "ratio of fraud losses to institution total deposits",
             value: 0.005,
+        },
+        hurdleRate: {
+            description: "lowest rate of return a project or investment must achieve acceptable",
+            value: 0.18,
         }
     },
     dictionaries: {
