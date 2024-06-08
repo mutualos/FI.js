@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Origination Expense Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, button {
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Origination Expense Calculator</h1>
+    <div id="form-container"></div>
+    <div id="result-container" class="result"></div>
+    <script>
+        window.buildConfig = {
+            libraries: ['organization', 'financial'],
+            version: '1.0.0',
+            formula: 'originationExpense',
+        };
+
+        function getFunctionParameters(func) {
+            const funcString = func.toString();
+            const paramMatch = funcString.match(/\(([^)]*)\)/);
+            if (!paramMatch) return [];
+
+            const params = paramMatch[1].split(',').map(param => param.trim());
+            return params.map(param => ({
+                name: param.replace(/=.*$/, '').trim(),
+                optional: /=\s*null/.test(param)
+            }));
+        }
+
+        function determineParameterType(param) {
+            const lowerParam = param.toLowerCase();
+            if (lowerParam.includes('type')) {
+                return { type: 'select', options: [] }; // Options will be filled later
+            } else if (lowerParam.includes('date')) {
+                return { type: 'date' };
+            } else if (lowerParam.includes('month')) {
+                return { type: 'number' };
+            } else if (lowerParam.includes('principal')) {
+                return { type: 'number' };
+            }
+            return { type: 'text' }; // Default to text input if type is unknown
+        }
+
+        function createFormConfigFromFunction(func) {
+            const parameters = getFunctionParameters(func);
+            return parameters.map(param => {
+                const paramConfig = determineParameterType(param.name);
+                return {
+                    name: param.name,
+                    ...paramConfig,
+                    label: param.name.charAt(0).toUpperCase() + param.name.slice(1),
+                    optional: param.optional
+                };
+            });
+        }
+
+        function renderForm(config) {
+            const form = document.createElement('form');
+
+            config.parameters.forEach(param => {
+                const label = document.createElement('label');
+                label.textContent = param.label;
+                form.appendChild(label);
+
+                let input;
+                if (param.type === 'select') {
+                    input = document.createElement('select');
+                    input.name = param.name;
+                    param.options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option;
+                        optionElement.textContent = option;
+                        input.appendChild(optionElement);
+                    });
+                } else {
+                    input = document.createElement('input');
+                    input.type = param.type;
+                    input.name = param.name;
+                }
+
+                if (param.optional) {
+                    input.required = false;
+                } else {
+                    input.required = true;
+                }
+
+                form.appendChild(input);
+            });
+
+            const submitButton = document.createElement('button');
+            submitButton.type = 'submit';
+            submitButton.textContent = 'Submit';
+            form.appendChild(submitButton);
+
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                handleFormSubmission(data);
+            });
+
+            document.getElementById('form-container').appendChild(form);
+        }
+
+        function handleFormSubmission(data) {
+            console.log('formData', data);
+            const headers = Object.keys(data);
+            const translations = {};
+            for (const key in headers) {
+                if (headers.hasOwnProperty(key)) {
+                    const value = headers[key];
+                    translations[value] = value;
+                }
+            }
+            const result = evalFormula(data, buildConfig.formula, translations, libraries);
+            displayResult(result);
+        }
+
+        function displayResult(result) {
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.textContent = `Result: ${result}`;
+        }
+
+        function initializeForm() {
+            const func = libraries.functions[buildConfig.formula].implementation;
+            const formConfig = createFormConfigFromFunction(func);
+            formConfig.find(param => param.name === 'type').options = Object.keys(libraries.dictionaries.loanTypeID.values); // Update options after libraries are loaded
+            renderForm({ parameters: formConfig });
+        }
+
+        document.addEventListener('allLibrariesLoaded', function (e) {
+            initializeForm();
+        });
+    </script>
+    <script src="../core/loadLibraries.js"></script>
+    <script src="../organization/pipes.js"></script>
+    <script src="../core/main.js"></script>
+</body>
+</html>
