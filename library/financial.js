@@ -155,9 +155,9 @@ const financial = {
             implementation: function(type) {
                 const identifiedType = libraries.functions.identifyType(type, libraries.dictionaries.ddaTypeID.values);
                 if (identifiedType !== null) {
-                    return libraries.dictionaries.ddaOpenCosts.values[identifiedType].toFixed(2);
+                    return libraries.dictionaries.ddaOpenExpense.values[identifiedType].toFixed(2);
                 } else {
-                    console.error(`type not found for libraries.dictionaries.ddaOpenCosts.values:${type}.`);
+                    console.error(`type not found for libraries.dictionaries.ddaOpenExpense.values:${type}.`);
                 }
             } 
         },
@@ -269,7 +269,7 @@ const financial = {
                 "Tax Exempt Commercial Real Estate": 0.0024
             },
         },
-        ddaOpenCosts: {
+        ddaOpenExpense: {
             description: "checking account openning costs",
             values: {
                 "Consumer": 84,
