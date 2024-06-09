@@ -1,5 +1,21 @@
 const financial = {
     functions: {
+        identifyType: function(type, dictionary) {
+            let identifiedType = null;
+            if (typeof dictionary === 'object') {    
+                if (type in dictionary) {
+                    identifiedType = type;
+                } else {
+                    for (let key in dictionary) {
+                        if (dictionary[key].includes(String(type))) {
+                            identifiedType = key;
+                            break;
+                        }
+                    }
+                }
+            }
+            return identifiedType;
+        },
         interestIncome: {
             description: "Calculates the interest income based on principal and annual rate",
             implementation: function(principal, annualRate) {
@@ -61,94 +77,64 @@ const financial = {
             implementation: function(type, principal, annualRate, riskRating, LTV = null, guarantee = null, termMonths = null, amortizationMonths = null, maturityDate = null) {
                 //const libraries = window.libraries; // Access the libraries object directly				
                 if (parseFloat(principal) <= 0) return 0.00;
-                if (typeof libraries.dictionaries.loanTypeID.values === 'object') {
-                    let identifiedType = null;
-                    if (type in libraries.dictionaries.loanTypeID.values) {
-                        identifiedType = type;
-                    } else {
-                        const typeIDs = libraries.dictionaries.loanTypeID.values;
-                        for (let key in typeIDs) {
-                            if (typeIDs[key].includes(String(type))) {
-                                identifiedType = key;
-                                break;
-                            }
-                        }
+                const identifiedType = libraries.functions.identifyType(type, libraries.dictionaries.loanTypeID.values);
+                if (identifiedType !== null) {
+                    const expectedLoss = libraries.dictionaries.loanDefaultRates.values[identifiedType]; 
+                    let riskFactor = 1;
+                    if (libraries.dictionaries.loanRiskFactors.values[riskRating]) {
+                        riskFactor = libraries.dictionaries.loanRiskFactors.values[riskRating]; 
+                    } 
+                    let monthlyRate = annualRate < 1 ? parseFloat(annualRate) / 12 : parseFloat(annualRate / 100) / 12;
+                    let remainingMonths = maturityDate ? libraries.functions.remainingMonths.implementation(maturityDate) : termMonths;
+                    if (remainingMonths === null || remainingMonths <= 0) {
+                        console.log('@loanLossReserve: Invalid termMonths or maturityDate. Please provide a valid maturityDate or termMonths.', principal, annualRate, remainingMonths);
+                        return 0.00;
                     }   
-                    if (identifiedType !== null) {
-                        const expectedLoss = libraries.dictionaries.loanDefaultRates.values[identifiedType]; 
-                        let riskFactor = 1;
-                        if (libraries.dictionaries.loanRiskFactors.values[riskRating]) {
-                            riskFactor = libraries.dictionaries.loanRiskFactors.values[riskRating]; 
-                        } 
-                        let monthlyRate = annualRate < 1 ? parseFloat(annualRate) / 12 : parseFloat(annualRate / 100) / 12;
-                        let remainingMonths = maturityDate ? libraries.functions.remainingMonths.implementation(maturityDate) : termMonths;
-                        if (remainingMonths === null || remainingMonths <= 0) {
-                            console.log('@loanLossReserve: Invalid termMonths or maturityDate. Please provide a valid maturityDate or termMonths.', principal, annualRate, remainingMonths);
-                            return 0.00;
-                        }   
-                        const amortization = isNaN(amortizationMonths) ? remainingMonths : Math.max(amortizationMonths, remainingMonths);
-                        const payment = libraries.functions.loanPayment.implementation(principal, annualRate, amortization);
-        
-                        const months = Math.max(Math.min(remainingMonths, 360), 1);
-                        let defaultRecovery = libraries.attributes.defaultRecoveryPerc.value;
-                        if (guarantee === 1) {
-                            defaultRecovery = defaultRecovery * 1.5;
-                        }
-                        if (LTV === null) {
-                            LTV = 1;
-                        }
-                        let recoveryValue = principal / LTV * defaultRecovery;
-                        let principalTemp = parseFloat(principal);
-                        let lossReserve = 0;
-                        let month = 0;
-                        let exposureAtDefault = principalTemp - recoveryValue; 
-                        while (month < months && principalTemp > 0) {
-                            if (exposureAtDefault > 0) {
-                                lossReserve += expectedLoss * exposureAtDefault / 12;
-                            }
-                            lossReserve += libraries.attributes.minOperatingRisk.value * principalTemp / 12;
-                            principalTemp -= payment - principalTemp * monthlyRate;
-                            exposureAtDefault = principalTemp - recoveryValue;
-                            month++;
-                        }
-                        lossReserve = lossReserve / months * 12 * riskFactor;
-                        return lossReserve.toFixed(2);
-                    } else {
-			console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
+                    const amortization = isNaN(amortizationMonths) ? remainingMonths : Math.max(amortizationMonths, remainingMonths);
+                    const payment = libraries.functions.loanPayment.implementation(principal, annualRate, amortization);
+    
+                    const months = Math.max(Math.min(remainingMonths, 360), 1);
+                    let defaultRecovery = libraries.attributes.defaultRecoveryPerc.value;
+                    if (guarantee === 1) {
+                        defaultRecovery = defaultRecovery * 1.5;
                     }
+                    if (LTV === null) {
+                        LTV = 1;
+                    }
+                    let recoveryValue = principal / LTV * defaultRecovery;
+                    let principalTemp = parseFloat(principal);
+                    let lossReserve = 0;
+                    let month = 0;
+                    let exposureAtDefault = principalTemp - recoveryValue; 
+                    while (month < months && principalTemp > 0) {
+                        if (exposureAtDefault > 0) {
+                            lossReserve += expectedLoss * exposureAtDefault / 12;
+                        }
+                        lossReserve += libraries.attributes.minOperatingRisk.value * principalTemp / 12;
+                        principalTemp -= payment - principalTemp * monthlyRate;
+                        exposureAtDefault = principalTemp - recoveryValue;
+                        month++;
+                    }
+                    lossReserve = lossReserve / months * 12 * riskFactor;
+                    return lossReserve.toFixed(2);
                 } else {
-                    console.log('libaries are missing loanTypeID see financial.js library docs');
-                }
+                    console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
+                }   
             }
-        },                
+        },
         originationExpense: {
             description: "Calculates the origination expense based on loan type, principal, and term",
             implementation: function(type, principal, termMonths = null, maturityDate = null) {
-                if (typeof libraries.dictionaries.loanTypeID.values === 'object') {
-                    let identifiedType = null;
-                    if (type in libraries.dictionaries.loanTypeID.values) {
-                        identifiedType = type;
-                    } else {
-                        const typeIDs = libraries.dictionaries.loanTypeID.values;
-                        for (let key in typeIDs) {
-                            if (typeIDs[key].includes(String(type))) {
-                                identifiedType = key;
-                                break;
-                            }
-                        }
-                    }
-                    if (identifiedType !== null) {
-                        const months = maturityDate ? libraries.functions.remainingMonths.implementation(maturityDate) : termMonths;
-                        const originationFactor = libraries.dictionaries.originationFactor.values[identifiedType];
-                        const principalCostMax = libraries.dictionaries.principalCostMax.values[identifiedType];
-                        const principalCostMin = principalCostMax / 10;
-                        let expense = Math.max(principalCostMin, Math.min(principalCostMax, principal)) * originationFactor / Math.max(months, 60) * 12;
-                        return expense.toFixed(2);
-                    } else {
-                        console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
-                    }
+                const identifiedType = libraries.functions.identifyType(type, libraries.dictionaries.loanTypeID.values);
+                if (identifiedType !== null) {
+                    const months = maturityDate ? libraries.functions.remainingMonths.implementation(maturityDate) : termMonths;
+                    const originationFactor = libraries.dictionaries.originationFactor.values[identifiedType];
+                    const principalCostMax = libraries.dictionaries.principalCostMax.values[identifiedType];
+                    const principalCostMin = principalCostMax / 10;
+                    let expense = Math.max(principalCostMin, Math.min(principalCostMax, principal)) * originationFactor / Math.max(months, 60) * 12;
+                    return expense.toFixed(2);
                 } else {
-                    console.log('libaries are missing loanTypeID see library docs');
+                    console.error(`type not found in libraries.dictionaries.loanTypeID.values:${type}.`);
                 }
             }
         },
@@ -164,25 +150,14 @@ const financial = {
                 }
             }
         },
-        ddaCosts: {
+        ddaExpense: {
             description: "Calculates maintenance expense of checking / demand deposit accounts based on type-indentifier",
             implementation: function(type) {
-                if (typeof libraries.dictionaries.ddaTypeID.values === 'object') {
-                    const typeIDs = libraries.dictionaries.ddaTypeID.values;
-                    let identifiedType = null;
-                    for (let key in typeIDs) {
-                        if (typeIDs[key].includes(String(type))) {
-                            identifiedType = key;
-                            break;
-                        }
-                    }
-                    if (identifiedType !== null) {
-                        return libraries.dictionaries.ddaOpenCosts.values[identifiedType].toFixed(2);
-                    } else {
-                        console.error(`type not found for libraries.dictionaries.ddaOpenCosts.values:${type}.`);
-                    }
+                const identifiedType = libraries.functions.identifyType(type, libraries.dictionaries.ddaTypeID.values);
+                if (identifiedType !== null) {
+                    return libraries.dictionaries.ddaOpenCosts.values[identifiedType].toFixed(2);
                 } else {
-                    console.log('libaries are missing ddaTypeID see library docs');
+                    console.error(`type not found for libraries.dictionaries.ddaOpenCosts.values:${type}.`);
                 }
             } 
         },
