@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loan Origination Expense Calculator</title>
+    <title>Origination Expense Calculator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -62,24 +62,37 @@
             }));
         }
 
-        function determineParameterType(param) {
-            const lowerParam = param.toLowerCase();
-            if (lowerParam.includes('type')) {
-                return { type: 'select', options: [] }; // Options will be filled later
-            } else if (lowerParam.includes('date')) {
+        function determineParameterTypeFromUsage(func, param) {
+            const funcString = func.toString();
+            const body = funcString.slice(funcString.indexOf('{') + 1, funcString.lastIndexOf('}'));
+
+            // Detect select type by checking for inclusion in identifyType function
+            const selectRegex = new RegExp(`identifyType\\(${param},\\s*libraries\\.dictionaries\\.([^\\.]+)\\.values\\)`);
+            const selectMatch = selectRegex.exec(body);
+            if (selectMatch) {
+                return { type: 'select', options: [], dictionary: selectMatch[1] };
+            }
+
+            // Detect date type by checking for Date related operations
+            const dateRegex = new RegExp(`\\bnew Date\\b|\\bDate\\b|\\bmaturityDate\\b`);
+            if (dateRegex.test(body) && param.toLowerCase().includes('date')) {
                 return { type: 'date' };
-            } else if (lowerParam.includes('month')) {
-                return { type: 'number' };
-            } else if (lowerParam.includes('principal')) {
+            }
+
+            // Detect number type by checking for mathematical operations
+            const numberRegex = new RegExp(`\\b${param}\\b.*[+\\-*/]|\\bMath\\.|\\bparseFloat\\(|\\bNumber\\(`);
+            if (numberRegex.test(body)) {
                 return { type: 'number' };
             }
-            return { type: 'text' }; // Default to text input if type is unknown
+
+            // Default to text input if type is unknown
+            return { type: 'text' };
         }
 
         function createFormConfigFromFunction(func) {
             const parameters = getFunctionParameters(func);
             return parameters.map(param => {
-                const paramConfig = determineParameterType(param.name);
+                const paramConfig = determineParameterTypeFromUsage(func, param.name);
                 return {
                     name: param.name,
                     ...paramConfig,
@@ -87,6 +100,13 @@
                     optional: param.optional
                 };
             });
+        }
+
+        function populateSelectOptions(parameter) {
+            // Use the dictionary identified in the determineParameterTypeFromUsage function
+            if (parameter.dictionary && libraries.dictionaries[parameter.dictionary] && libraries.dictionaries[parameter.dictionary].values) {
+                parameter.options = Object.keys(libraries.dictionaries[parameter.dictionary].values);
+            }
         }
 
         function renderForm(config) {
@@ -101,6 +121,8 @@
                 if (param.type === 'select') {
                     input = document.createElement('select');
                     input.name = param.name;
+                    const optionElement = document.createElement('option'); // Add a default empty option
+                    input.appendChild(optionElement);
                     param.options.forEach(option => {
                         const optionElement = document.createElement('option');
                         optionElement.value = option;
@@ -159,7 +181,14 @@
         function initializeForm() {
             const func = libraries.functions[buildConfig.formula].implementation;
             const formConfig = createFormConfigFromFunction(func);
-            formConfig.find(param => param.name === 'type').options = Object.keys(libraries.dictionaries.loanTypeID.values); // Update options after libraries are loaded
+
+            // Populate options for select fields dynamically
+            formConfig.forEach(param => {
+                if (param.type === 'select') {
+                    populateSelectOptions(param);
+                }
+            });
+
             renderForm({ parameters: formConfig });
         }
 
