@@ -17,7 +17,7 @@ const financial = {
                 return months > 0 ? months : 1;
             }
         },
-        calculateLoanPayment: {
+        loanPayment: {
             description: "Calculates the monthly loan payment based on principal, annual rate, and amortization months",
             implementation: function(principal, annualRate, amortizationMonths) {
                 const monthlyRate = annualRate < 1 ? parseFloat(annualRate) / 12 : parseFloat(annualRate / 100) / 12;
@@ -39,7 +39,7 @@ const financial = {
                     return 0.00;
                 }
                 const amortization = isNaN(amortizationMonths) ? remainingMonths : Math.max(amortizationMonths, remainingMonths);
-                const payment = libraries.functions.calculateLoanPayment.implementation(principal, annualRate, amortization);
+                const payment = libraries.functions.loanPayment.implementation(principal, annualRate, amortization);
                 const months = Math.max(Math.min(remainingMonths, 360), 1);
                 var principalTemp = parseFloat(principal);
                 var principalSum = 0;
@@ -87,7 +87,7 @@ const financial = {
                             return 0.00;
                         }   
                         const amortization = isNaN(amortizationMonths) ? remainingMonths : Math.max(amortizationMonths, remainingMonths);
-                        const payment = libraries.functions.calculateLoanPayment.implementation(principal, annualRate, amortization);
+                        const payment = libraries.functions.loanPayment.implementation(principal, annualRate, amortization);
         
                         const months = Math.max(Math.min(remainingMonths, 360), 1);
                         let defaultRecovery = libraries.attributes.defaultRecoveryPerc.value;
