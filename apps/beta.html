@@ -48,7 +48,7 @@
                 },
                 {
                     id: 'checking',
-                    formula: '((chargesIncome - interestExpense - deposits * depositUnitCost) * 12 + balance * (1 - ddaReserveRequired) * marginTarget - fraudLoss - ddaCosts) * (1-taxRate)',
+                    formula: '((chargesIncome - interestExpense - deposits * depositUnitCost) * 12 + balance * (1 - ddaReserveRequired) * marginTarget - fraudLoss - ddaExpense) * (1-taxRate)',
                     pipeIDs: ['check', 'dda']
                 }
             ]
