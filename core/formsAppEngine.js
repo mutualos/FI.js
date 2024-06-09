@@ -44,7 +44,7 @@ function createFormConfigFromFunction(func) {
         return {
             name: param.name,
             ...paramConfig,
-            label: param.name.charAt(0).toUpperCase() + param.name.slice(1),
+            label: param.name.split(/(?=[A-Z])/).join(' ').replace(/^\w/, c => c.toUpperCase()),
             optional: param.optional
         };
     });
@@ -62,7 +62,7 @@ function renderForm(config) {
 
     config.parameters.forEach(param => {
         const label = document.createElement('label');
-        label.textContent = param.label;
+        label.textContent = param.label + (param.optional ? ' (optional)' : '');
         form.appendChild(label);
 
         let input;
@@ -123,7 +123,7 @@ function handleFormSubmission(data) {
 
 function displayResult(result) {
     const resultContainer = document.getElementById('result-container');
-    resultContainer.textContent = `Result: ${result}`;
+    resultContainer.textContent = `Result: ${result.toFixed(2)}`;
 }
 
 function extractFunctionsAndPipesFromFormula(formula) {
@@ -175,7 +175,7 @@ function initializeForm() {
                 formConfig.push({
                     name: funcName,
                     type: 'number', // Assuming standalone variables are numbers for simplicity
-                    label: funcName.charAt(0).toUpperCase() + funcName.slice(1),
+                    label: funcName.split(/(?=[A-Z])/).join(' ').replace(/^\w/, c => c.toUpperCase()),
                     optional: false
                 });
             }
@@ -187,7 +187,7 @@ function initializeForm() {
             formConfig.push({
                 name: pipeName,
                 type: 'number', // Assuming pipes are numbers for simplicity
-                label: pipeName.charAt(0).toUpperCase() + pipeName.slice(1),
+                label: pipeName.split(/(?=[A-Z])/).join(' ').replace(/^\w/, c => c.toUpperCase()),
                 optional: false
             });
         }
