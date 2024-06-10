@@ -1,3 +1,76 @@
+let copernicusFunctions = [];
+let copernicusAttributes = [];
+let copernicusDictionaries = [];
+let pipeItems = [];
+let functionDescriptions = {};
+let attributeDescriptions = {};
+let dictionaryDescriptions = {};
+
+// Function to extract items from a library object
+function extractFromLibrary(libraryObject) {
+    if (libraryObject.functions) {
+        for (let key in libraryObject.functions) {
+            // Check if the function is an implementation
+            if (libraryObject.functions[key].implementation) {
+                copernicusFunctions.push(key);
+                functionDescriptions[key] = libraryObject.functions[key].description;
+            }
+        }
+    }
+    if (libraryObject.attributes) {
+        for (let key in libraryObject.attributes) {
+            copernicusAttributes.push(key);
+            attributeDescriptions[key] = libraryObject.attributes[key].description;
+        }
+    }
+    if (libraryObject.dictionaries) {
+        for (let key in libraryObject.dictionaries) {
+            copernicusDictionaries.push(key);
+            dictionaryDescriptions[key] = libraryObject.dictionaries[key].description;
+        }
+    }
+}
+
+// Function to extract items from pipes object
+function extractFromPipes(pipesObject) {
+    for (let category in pipesObject) {
+        let categoryItems = [];
+        for (let key in pipesObject[category]) {
+            categoryItems.push(pipesObject[category][key]);
+        }
+        pipeItems.push({ category: category, items: categoryItems });
+    }
+}
+
+// Function to load all libraries defined in editorConfig
+function loadAllLibraries() {
+    console.log('Loading the following libraries:');
+    window.editorConfig.libraries.forEach(libraryName => {
+        console.log(libraryName);
+        if (window[libraryName]) {
+            extractFromLibrary(window[libraryName]);
+        }
+    });
+
+    if (window.translations) {
+        extractFromPipes(window.translations);
+    }
+
+    updateSuggestionBox('attributes', copernicusAttributes, '');
+    updateSuggestionBox('functions', copernicusFunctions, '');
+    updateSuggestionBox('dictionaries', copernicusDictionaries, '');
+    updatePipeSuggestionBox(pipeItems, '');
+}
+
+// Event listener to load all libraries on DOM content load
+document.addEventListener('DOMContentLoaded', () => {
+    loadAllLibraries();
+    console.log('Pipe Items:', pipeItems); // Log pipe items for debugging
+    console.log('Function Descriptions:', functionDescriptions); // Log function descriptions for debugging
+    console.log('Attribute Descriptions:', attributeDescriptions); // Log attribute descriptions for debugging
+    console.log('Dictionary Descriptions:', dictionaryDescriptions); // Log dictionary descriptions for debugging
+});
+
 function highlightSyntax(text) {
     const colorMap = ['#1abc9c', '#3498db', '#9b59b6', '#e74c3c', '#f39c12']; // Colors for different levels of nested parentheses
     const errorColor = '#e74c3c'; // Red color for errors
