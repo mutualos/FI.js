@@ -101,6 +101,11 @@ function renderForm(config) {
         event.preventDefault();
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
+        Object.keys(data).forEach(key => {
+            if (data[key] === "") {
+                data[key] = 'null';
+            }
+        });
         handleFormSubmission(data);
     });
 
@@ -145,7 +150,9 @@ function extractFunctionsAndPipesFromFormula(formula) {
     console.log('Extracted Pipes:', pipes);
 
     // Include standalone variables in valid functions if not already included
-    const standaloneVars = functionMatches.filter(match => !validFunctions.includes(match) && !pipes.includes(match) && !dictionaries.includes(match));
+    const standaloneVars = functionMatches.filter(match => 
+        !validFunctions.includes(match) && !pipes.includes(match) && !dictionaries.includes(match) && !libraries.attributes.hasOwnProperty(match)
+    );
     console.log('Standalone Variables:', standaloneVars);
     validFunctions.push(...standaloneVars);
 
