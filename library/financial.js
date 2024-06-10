@@ -139,7 +139,7 @@ const financial = {
             }
         },
         servicingExpense: {
-            description: "Calculates the servicing expense based on principal and term",
+            description: "Calculates the loan servicing expense based on principal and term",
             implementation: function(principal, termMonths = null, maturityDate = null) {
                 if (libraries.attributes.loanServicingFactor.value) {
                     const months = maturityDate ? libraries.functions.remainingMonths.implementation(maturityDate) : termMonths;
