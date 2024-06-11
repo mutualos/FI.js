@@ -39,7 +39,7 @@ button:hover {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   border-radius: 5px;
   /* top | left and right | bottom */
-  margin: 0.5em auto 2.25em;
+  margin: 0.5em auto 4.5em;
   background-color: white;
 }
 
