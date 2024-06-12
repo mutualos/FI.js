@@ -24,6 +24,7 @@
     <script>
         window.buildConfig = {
             libraries: ['organization', 'financial', 'https://fijs.net/api/trates/'],
+            title: "Customer profitability",
             version: '1.0.0',
             presentation: {
                 columns: [
@@ -53,6 +54,7 @@
                 }
             ]
         };
+        alert('Launching ' + window.buildConfig.title)
     </script>
     <script src="../core/loadLibraries.js"></script>
     <script src="../organization/pipes.js"></script>
