@@ -7,7 +7,8 @@ const translations = {
         "Risk_Rating": "riskRating",
         "Class_Code": "type",
         "Portfolio": "ID",
-        "Branch_Number": "branch"
+        "Branch_Number": "branch",
+        "Opened_by_Resp_Code": "responsibilty"
         // Additional mappings as necessary
     },
     checking: {
@@ -21,7 +22,8 @@ const translations = {
         "PMTD_Other_Charges_Waived": "otherChargesWaived",
         "PMTD_Interest_Earned": "interestExpense",
         "PMTD_Number_of_Deposits": "deposits",
-        "Branch_Number": "branch"
+        "Branch_Number": "branch",
+        "Opened_by_Resp_Code": "responsibilty"
     }
 };
-window.translations = translations; 
+window.translations = translations;
