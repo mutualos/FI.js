@@ -159,8 +159,9 @@ function processFormula(dataLines, headers, pipeFormula, pipeID, libraries) {
             return obj;
         }, {});
         const result = evalFormula(dataObject, pipeFormula, translations[pipeID], libraries);
+        if (result === null) return; // Skip if result is null
+        
         const id = dataObject['ID'] || dataObject[Object.keys(dataObject)[0]]; // Use 'ID' or first key if 'ID' is not available
-
         const limitedDataObject = { id };
         columns.forEach(column => {
             if (column in dataObject) {
