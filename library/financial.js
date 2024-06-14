@@ -176,7 +176,27 @@ const financial = {
             implementation: function(balance) {
                 return (libraries.attributes.capitalTarget.value * libraries.attributes.fraudLossFactor.value * balance).toFixed(2);
             }
-        } 
+        },
+        openedLast90: {
+            description: "Determines if an account or loan was opened in the last 90 days",
+            implementation: function(openDate) {
+                // Check if openDate is a valid date string
+                if (isNaN(Date.parse(openDate))) {
+                    console.error('Invalid date format');
+                    return false;
+                }
+        
+                // Convert openDate string to date object
+                const openDateObj = new Date(openDate);
+                const today = new Date();
+                
+                // Calculate the date 90 days ago
+                const ninetyDaysAgo = new Date(today.setDate(today.getDate() - 90));
+                
+                // Return true if openDate is later than today minus 90 days
+                return openDateObj > ninetyDaysAgo;
+            }
+        }
     },
     attributes: {
         loanServicingFactor: {
