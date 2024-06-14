@@ -44,7 +44,7 @@
             components: [
                 {
                     id: 'loans',
-                    formula: 'principal > 500000 ? principal : null',
+                    formula: 'openedLast90 ? principal : null',
                     pipeIDs: ['loan', 'lending', 'line']
                 },
             ]
