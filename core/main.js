@@ -147,6 +147,7 @@ function evaluateExpression(expression) {
 const headers = ['Portfolio', 'Date_Opened', 'Maturity_Date', 'Branch_Number', 'Class_Code', 'Opened_by_Resp_Code', 'Late_Charges'];
 const translatedHeader = aiTranslater(headers, 'fees');
 console.log('Translated Header:', translatedHeader);
+//console.log('yearToDateFactor Testing', yearToDateFactor('PMTD'));
 
 // Function to extract unique source names from the formula
 function extractSources(formula) {

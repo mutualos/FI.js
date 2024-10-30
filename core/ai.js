@@ -197,7 +197,7 @@ function aiIsBusiness(...args) {
     let isBusiness = false;
 
     // Validation: Check if relevant parameters exist and have valid values
-    if (typeof params.balance !== 'number' || typeof params.consumerMaximum !== 'number' || typeof params.deposits !== 'number') {
+    if (typeof params.balance !== 'number' || typeof params.consumerMaximum !== 'number' || typeof params.annualDeposits !== 'number') {
         throw new Error("Invalid or missing parameters. Ensure 'balance', 'consumerMaximum', and 'deposits' are provided as numbers.");
     }
     const threeStandardDeviations = window.analytics[params.sourceIndex][aiTranslater(Object.keys(window.analytics[params.sourceIndex]), 'balance')].threeStdDeviations[1];
@@ -209,7 +209,7 @@ function aiIsBusiness(...args) {
     console.log('thresholds, low, high', lowThreshold, highThreshold, params.deposits)
     if (params.balance > highThreshold) {  
         isBusiness = true;
-    } else if (params.deposits > 6 && params.balance > lowThreshold) {  
+    } else if (params.annualDeposits > 72 && params.balance > lowThreshold) {  
         isBusiness = true;
     }
 
