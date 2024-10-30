@@ -206,7 +206,6 @@ function aiIsBusiness(...args) {
     const highThreshold = threeStandardDeviations > params.consumerMaximum * 1.2  ?  threeStandardDeviations : params.consumerMaximum * 1.2; // 20% over the consumer threshold
     const lowThreshold = twoStandardDeviations > params.consumerMaximum * .8  ?  twoStandardDeviations : params.consumerMaximum * .8; // 20% under the consumer threshold
     // Proceed with the logic if parameters are valid
-    console.log('thresholds, low, high', lowThreshold, highThreshold, params.deposits)
     if (params.balance > highThreshold) {  
         isBusiness = true;
     } else if (params.annualDeposits > 72 && params.balance > lowThreshold) {  
