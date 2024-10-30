@@ -200,11 +200,16 @@ function aiIsBusiness(...args) {
     if (typeof params.balance !== 'number' || typeof params.consumerMaximum !== 'number' || typeof params.deposits !== 'number') {
         throw new Error("Invalid or missing parameters. Ensure 'balance', 'consumerMaximum', and 'deposits' are provided as numbers.");
     }
-
+    const threeStandardDeviations = window.analytics[params.sourceIndex][aiTranslater(Object.keys(window.analytics[params.sourceIndex]), 'balance')].threeStdDeviations[1];
+    const twoStandardDeviations = window.analytics[params.sourceIndex][aiTranslater(Object.keys(window.analytics[params.sourceIndex]), 'balance')].twoStdDeviations[1];
+    
+    const highThreshold = threeStandardDeviations > params.consumerMaximum * 1.2  ?  threeStandardDeviations : params.consumerMaximum * 1.2; // 20% over the consumer threshold
+    const lowThreshold = twoStandardDeviations > params.consumerMaximum * .8  ?  twoStandardDeviations : params.consumerMaximum * .8; // 20% under the consumer threshold
     // Proceed with the logic if parameters are valid
-    if (params.balance > params.consumerMaximum * 1.2) {  // 20% over the consumer threshold
+    console.log('thresholds, low, high', lowThreshold, highThreshold, params.deposits)
+    if (params.balance > highThreshold) {  
         isBusiness = true;
-    } else if (params.deposits > 6 && params.balance > params.consumerMaximum * 0.8) {  //80% of the consumer threshold
+    } else if (params.deposits > 6 && params.balance > lowThreshold) {  
         isBusiness = true;
     }
 

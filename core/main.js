@@ -515,6 +515,8 @@ function computeAnalytics(csvData) {
           mode: mode(validValues),
           variance: variance(validValues),
           stdDeviation: stdDeviation(validValues),
+          twoStdDeviations: twoStdDeviations(validValues),
+          threeStdDeviations: threeStdDeviations(validValues),
           sum: sum(validValues),
           count: validValues.length, 
           unique : uniqueValues(validValues)
@@ -625,6 +627,20 @@ function sum(values) {
 function uniqueValues(values) {
   const uniqueValues = new Set(values);
   return uniqueValues.size
+}
+
+// Function to calculate the range for two standard deviations
+function twoStdDeviations(values) {
+  const m = mean(values);
+  const sd = stdDeviation(values);
+  return [m - 2 * sd, m + 2 * sd];
+}
+
+// Function to calculate the range for three standard deviations
+function threeStdDeviations(values) {
+  const m = mean(values);
+  const sd = stdDeviation(values);
+  return [m - 3 * sd, m + 3 * sd];
 }
 
 function createProbabilityArray(mode, unique, uniqueArray) {
