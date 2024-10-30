@@ -227,33 +227,30 @@ const financial = {
                 const creditRate = financial.functions.calculateFtpRate.implementation(12, sourceIndex);
                 //const creditRate = window.libraries.api.trates.values[12] * 0.627; // operational risk, regulatory risk, deposit acquisition factor, interest rate risk, and liquidity discount.
                 const creditForFunding = sourceIndex === 'checking' ? creditRate * balance * (1 - financial.attributes.ddaReserveRequired.value) : creditRate * balance;
-                let operatingExpense = 100;  //default
-                let fraudLoss = 0;
-                let interestExpense = 0;
+                var operatingExpense = 100;  //default
+                var fraudLoss = 0;
+                var interestExpense = 0;
 
                 // calculate deposit volume
+                var annualDeposits = 0;
                 if (deposits) {
-                    console.log ('deposits', deposits)
                     if (window.analytics[sourceIndex][aiTranslater(Object.keys(window.analytics[sourceIndex]), 'deposits')].YTDfactor === 1) { //if YTDFactor === 1 then divide volume by life in years else multiply YTD factor by volume 
                         const { monthsSinceOpen, yearsSinceOpen } = financial.functions.sinceOpen.implementation(open);
-                        deposits = deposits / yearsSinceOpen;
+                        annualDeposits = deposits / yearsSinceOpen;
                     } else {
-                        deposits = deposits * window.analytics[sourceIndex][aiTranslater(Object.keys(window.analytics[sourceIndex]), 'deposits')].YTDfactor;
+                        annualDeposits = deposits * window.analytics[sourceIndex][aiTranslater(Object.keys(window.analytics[sourceIndex]), 'deposits')].YTDfactor;
                     }
-                } else {
-                    deposits = 0;
                 }
 
                 //calculate withdrawals volume
+                var annualWithdrawals = 0;
                 if (withdrawals) {
                     if (window.analytics[sourceIndex][aiTranslater(Object.keys(window.analytics[sourceIndex]), 'withdrawals')].YTDfactor === 1) { //if YTDFactor === 1 then divide volume by life in years else multiply YTD factor by volume 
                         const { monthsSinceOpen, yearsSinceOpen } = financial.functions.sinceOpen.implementation(open);
-                        withdrawals = withdrawals / yearsSinceOpen;
+                        annualWithdrawals = withdrawals / yearsSinceOpen;
                     } else {
-                        withdrawals = withdrawals *  window.analytics[sourceIndex][aiTranslater(Object.keys(window.analytics[sourceIndex]), 'withdrawals')].YTDfactor;
+                        annualWithdrawals = withdrawals *  window.analytics[sourceIndex][aiTranslater(Object.keys(window.analytics[sourceIndex]), 'withdrawals')].YTDfactor;
                     }
-                } else {
-                    withdrawals = 0;
                 }
 
                 if (sourceIndex === 'certificate') {
@@ -265,7 +262,7 @@ const financial = {
                 } else {  //checking and savings
 		    		//aiIdConsumerSmallBiz  
 					const consumerMaximum = financial.dictionaries.consumerMaximum.values[sourceIndex];
-					const params = {balance, interest, sourceIndex, deposits, withdrawals, consumerMaximum};
+					const params = {balance, interest, sourceIndex, annualDeposits, annualWithdrawals, consumerMaximum};
 					const isBusiness = aiIsBusiness([params]);  // @ai.js
 					let accountType = "Consumer";
 					if (isBusiness) {
