@@ -2,11 +2,11 @@
 function displayResultsInTable() {
   console.log('combinedResults', combinedResults);
   const tableContainer = document.createElement('div');
-  tableContainer.className = 'table-container'; 
+  tableContainer.className = 'table-container';
   const table = document.createElement('table');
-  table.className = 'table'; 
+  table.className = 'table';
   const thead = document.createElement('thead');
-  
+
   const headerRow = document.createElement('tr');
 
   // Create a button to handle Group ID mapping
@@ -34,71 +34,88 @@ function displayResultsInTable() {
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // Sort combinedResults by 'result' in descending order
+  // Determine column format based on values in each row
+  const columnFormat = appConfig.presentation.columns.map(() => ({ isCurrency: false, integerCount: 0, currencyCount: 0 }));
+  const columnSums = Array(appConfig.presentation.columns.length).fill(0);
+  let totalCount = 0;
+  let resultSum = 0;
+
+  // First pass to determine the dominant format for each column
   const sortedResults = Object.entries(combinedResults).sort((a, b) => {
     return parseFloat(b[1].result) - parseFloat(a[1].result);
   });
 
-  // Sort combinedResults by 'result' in ascending order
-  /*const sortedResults = Object.entries(combinedResults).sort((a, b) => {
-    return parseFloat(a[1].result) - parseFloat(b[1].result);
-  });*/
+  sortedResults.forEach(([_, data]) => {
+    appConfig.presentation.columns.forEach((column, index) => {
+      const field = column.field.toLowerCase();
+      let values = [];
 
+      if (data[field]) {
+        if (typeof data[field] === 'string') {
+          values = data[field].split(',').map(v => parseFloat(v.trim()));
+        } else {
+          values = Array.isArray(data[field]) ? data[field] : [parseFloat(data[field])];
+        }
+      }
+
+      if (values.length > 0) {
+        if (values.every(Number.isInteger) && values.every(v => v <= 9999)) {
+          columnFormat[index].integerCount += values.length;
+        } else {
+          columnFormat[index].currencyCount += values.length;
+          columnFormat[index].isCurrency = true; // Flag as currency if any value suggests it
+        }
+      }
+    });
+  });
+
+  columnFormat.forEach((format, index) => {
+    format.isCurrency = format.currencyCount > format.integerCount;
+  });
+
+  // Second pass to render each row with consistent formatting
   const rows = {};
-
-  // Iterate over sorted combined results to construct each row
   sortedResults.forEach(([uniqueId, data]) => {
     if (data.result) {
       const row = document.createElement('tr');
-
-      // Create the cell for the unique ID
       const uniqueIdCell = document.createElement('td');
-      uniqueIdCell.textContent = `${uniqueId.toString()}  (${data.count})`; // Ensure unique ID is a string
+      uniqueIdCell.textContent = `${uniqueId.toString()} (${data.count})`;
       row.appendChild(uniqueIdCell);
 
-      // Add cells based on presentation config
-      if (appConfig.presentation && appConfig.presentation.columns) {
-        appConfig.presentation.columns.forEach(column => {
-          const cell = document.createElement('td');
-          const field = column.field.toLowerCase(); // Use field for data access
+      totalCount += data.count;
 
-          let values;
-          if (data[field]) {
-              // Ensure data[field] is a string before using split
-              if (typeof data[field] === 'string') {
-                  values = data[field].split(',').map(v => parseFloat(v.trim()));
-              } else {
-                  // If data[field] is already a number or an array of numbers, use it directly
-                  values = Array.isArray(data[field]) ? data[field] : [parseFloat(data[field])];
-              }
+      appConfig.presentation.columns.forEach((column, index) => {
+        const cell = document.createElement('td');
+        const field = column.field.toLowerCase();
+        let values = [];
+
+        if (data[field]) {
+          if (typeof data[field] === 'string') {
+            values = data[field].split(',').map(v => parseFloat(v.trim()));
           } else {
-              values = [];
+            values = Array.isArray(data[field]) ? data[field] : [parseFloat(data[field])];
           }
+        }
 
-          // Determine the content of the cell based on the values
-          if (field === appConfig.groupBy.toLowerCase()) {
-              cell.textContent = uniqueId.toString();
-          } else if (values.length > 0) {
-              if (values.every(Number.isInteger) && values.every(v => v <= 9999)) {
-                  // If all values are integers and none are greater than 9999 (beyond typical attribute or classifcation systems), calculate and display the mode
-                  const modeValue = calculateMode(values);
-                  cell.textContent = modeValue;
-              } else {
-                  const sumValue = values.reduce((acc, v) => acc + v, 0);
-                  cell.textContent = new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD'
-                  }).format(sumValue);
-              }
+        if (values.length > 0) {
+          if (!columnFormat[index].isCurrency) {
+            const modeValue = calculateMode(values);
+            cell.textContent = modeValue;
           } else {
-              cell.textContent = ''; // Default empty string if field is missing
+            const sumValue = values.reduce((acc, v) => acc + v, 0);
+            cell.textContent = new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD'
+            }).format(sumValue);
+            columnSums[index] += sumValue;
           }
+        } else {
+          cell.textContent = '';
+        }
 
-          row.appendChild(cell);
+        row.appendChild(cell);
       });
-    }
-    
-      // Create the cell for the result
+
       const valueCell = document.createElement('td');
       valueCell.textContent = new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -106,11 +123,40 @@ function displayResultsInTable() {
       }).format(data.result);
       row.appendChild(valueCell);
 
-      table.appendChild(row);
-      rows[uniqueId] = uniqueIdCell; // Store reference for updating
+      resultSum += data.result;
 
+      table.appendChild(row);
+      rows[uniqueId] = uniqueIdCell;
     }
   });
+
+  // Add totals row at the end of the table
+  const totalRow = document.createElement('tr');
+  const totalLabelCell = document.createElement('td');
+  totalLabelCell.textContent = `Total Count: ${totalCount}`;
+  totalRow.appendChild(totalLabelCell);
+
+  appConfig.presentation.columns.forEach((_, index) => {
+    const totalCell = document.createElement('td');
+    if (columnFormat[index].isCurrency) {
+      totalCell.textContent = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(columnSums[index]);
+    } else {
+      totalCell.textContent = ''; // Blank if the column isn't currency
+    }
+    totalRow.appendChild(totalCell);
+  });
+
+  const resultTotalCell = document.createElement('td');
+  resultTotalCell.textContent = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(resultSum);
+  totalRow.appendChild(resultTotalCell);
+  table.appendChild(totalRow);
+
   tableContainer.appendChild(table);
   const resultsContainer = document.createElement('div');
   resultsContainer.id = 'results-container';
@@ -161,7 +207,7 @@ function displayResultsInTable() {
   // Function to update unique columns using the mapping
   function updateUniqueColumns(mapping) {
     Object.entries(combinedResults).forEach(([uniqueId, _]) => {
-      if (mapping[uniqueId] && rows[uniqueId]) {  // mapping (mapping[uniqueId]) is present and table row (rows[uniqueId]) has been rendered
+      if (mapping[uniqueId] && rows[uniqueId]) {
         rows[uniqueId].textContent = mapping[uniqueId] + ' (' + combinedResults[uniqueId].count + ')';
       }
     });
