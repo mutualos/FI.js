@@ -83,23 +83,36 @@ function parseCSV(csvContent, callback) {
   callback(data);
 }
 
+function isDate(value) {
+  // Remove any surrounding single or double quotes
+  const strippedValue = value.replace(/^['"]|['"]$/g, '');
+  console('inside isDate', strippedValue);
+  return !isNaN(Date.parse(strippedValue)) && isNaN(value);
+}
+
 function evaluateExpression(expression) {
   let conditionLocked = false; // Initialize within the function to ensure it resets each time
 
   console.log('Original Expression:', expression);
-  
+
   // Regex to match conditions inside double curly braces {{ }}
   const conditionRegex = /\{\{([\s\S]+?)\}\}/g;
   let match;
 
   // First pass: Evaluate conditions inside double curly braces and determine if any are true
   while ((match = conditionRegex.exec(expression)) !== null) {
-    const condition = match[1]; // Extract the condition inside {{ }}
+    let condition = match[1]; // Extract the condition inside {{ }}
+
+    // Convert any dates within the condition to day difference values
+    condition = condition.replace(/(['"]?\b\d{4}[-/\.]\d{2}[-/\.]\d{2}\b['"]?|\b\d{2}[-/\.]\d{2}[-/\.]\d{4}\b|\b\d{2}[-/\.]\d{2}[-/\.]\d{2}\b)/g, (value) => {
+      return isDate(value) ? convertDateToDays(value) : value;
+    });
+
     try {
       const evaluatedCondition = Function(`'use strict'; return (${condition})`)();
       console.log(`Condition "${condition}" evaluated to: ${evaluatedCondition}`);
-      
-      // If any condition evaluates to true, lock the condition (Truth Propagation)
+
+      // Lock condition if any evaluates to true
       if (evaluatedCondition === true) {
         conditionLocked = true;
       }
@@ -114,13 +127,19 @@ function evaluateExpression(expression) {
     expression = expression.replace(/\{\{([\s\S]+?)\}\}/g, 'true');
   } else {
     // Evaluate all conditions normally if none are locked
+    // Step 1: Replace dates with integer expression of days since the date
+    expression = expression.replace(/(['"]?\b\d{4}[-/.]\d{2}[-/.]\d{2}\b['"]?|['"]?\b\d{2}[-/.]\d{2}[-/.]\d{4}\b['"]?|['"]?\b\d{2}[-/.]\d{2}[-/.]\d{2}\b['"]?)/g, (value) => {
+      // console.log('Found Date Value:', value); // Log each date identified by regex
+      return isDate(value) ? convertDateToDays(value) : value;
+    });
+    // Step 2: Process any conditions within double curly braces (if present)
     expression = expression.replace(/\{\{([\s\S]+?)\}\}/g, (match, condition) => {
-      try {
+      try { 
         const evaluatedCondition = Function(`'use strict'; return (${condition})`)();
         return evaluatedCondition ? 'true' : 'false';
       } catch (error) {
         console.error(`Error evaluating condition: ${condition}`, error);
-        return 'false'; // Default to false in case of an error
+        return 'false';
       }
     });
   }
@@ -139,8 +158,15 @@ function evaluateExpression(expression) {
     return result;
   } catch (error) {
     console.error('Error evaluating expression:', error, safeExpression);
-    return 0; // Return 0 in case of any error
+    return 0;
   }
+}
+
+// Helper function to convert a date to the number of days since the date
+function convertDateToDays(dateString) {
+  const dateValue = new Date(dateString);
+  const differenceInTime = dateValue - new Date();
+  return Math.floor(differenceInTime / (1000 * 3600 * 24)); // Return difference in days
 }
 
 // Test the aiTranslater function
@@ -148,6 +174,7 @@ const headers = ['Portfolio', 'Date_Opened', 'Maturity_Date', 'Branch_Number', '
 const translatedHeader = aiTranslater(headers, 'fees');
 console.log('Translated Header:', translatedHeader);
 //console.log('yearToDateFactor Testing', yearToDateFactor('PMTD'));
+//console.log('evaluateExpression:', evaluateExpression('2021-10-31' > '2020-10-31'))
 
 // Function to extract unique source names from the formula
 function extractSources(formula) {
@@ -259,11 +286,7 @@ function processFormula(identifiedSources, formula, groupKey, csvData) {
           console.log('Field Value:', value);
       
           if (isDate(value)) {
-            const dateValue = new Date(value);
-            const differenceInTime = new Date() - dateValue;
-            const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
-            console.log('Date Difference:', differenceInDays);
-            return differenceInDays;
+            return convertDateToDays(value); 
           } else {
             const numericValue = parseFloat(value);
             return isNaN(numericValue) ? '0' : `${numericValue}`;
@@ -331,11 +354,6 @@ function processFormula(identifiedSources, formula, groupKey, csvData) {
 
   console.log('Final Results:', results);
   return results;
-}
-
-// Helper function to check if a value is a valid date
-function isDate(value) {
-  return !isNaN(Date.parse(value)) && isNaN(value);
 }
 
 function getFilenameWithoutExtension(url) {
