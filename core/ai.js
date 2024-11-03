@@ -5,7 +5,9 @@ const synonymLibrary = {
     'checking': ['dda', 'demand deposit'], 
     'withdrawal': ['check', 'draft', 'debit'],
     'deposit': ['credit'],
-    'certificate': ['cd', 'cod', 'certificate of deposit']
+    'certificate': ['cd', 'cod', 'certificate of deposit'],
+    'own': ['responsibility'],
+    'typ': ['classification', 'class']
 };
 
 function stem(word) {
@@ -25,7 +27,8 @@ function stem(word) {
       'were': 'be',
       'having': 'have',
       'had': 'have',
-      'fees': 'fee'
+      'fees': 'fee',
+      'responsibility' : 'resp'
     };
   
     if (irregulars[word]) {
