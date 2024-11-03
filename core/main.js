@@ -145,15 +145,24 @@ function evaluateExpression(expression) {
   }
   console.log('Expression after processing:', expression);
 
+  // **New step to convert 'x in [a, b, c]' syntax to array membership checks**
+  expression = expression.replace(/(\S+)\s+in\s+\[([^\]]+)\]/g, 'includes([$2], $1)');
+
+  // Define includes function within scope for array membership checks
+  function includes(array, value) {
+    return array.includes(value);
+  }
+
   // Replace 'null' with '0' to prevent evaluation issues
   const sanitizedExpression = expression.replace(/null/g, '0');
 
   // Allow letters, numbers, underscores, dots, arithmetic operators, parentheses,
   // comparison operators, ternary operators, logical operators, whitespace, and quotes
-  const safeExpression = sanitizedExpression.replace(/[^a-zA-Z0-9_+.\\\-*/%(),<>=!?:|& \n\r\t'"]+/g, '');
+  const safeExpression = sanitizedExpression.replace(/[^a-zA-Z0-9_+.\\\-*/%(),<>=!?:|& \n\r\t'"\[\]]+/g, '');
 
   try {
-    const result = Function(`'use strict'; return (${safeExpression})`)();
+    // Use includes function in evaluation
+    const result = Function('includes', `'use strict'; return (${safeExpression})`)(includes);
     console.log('Final Evaluated Result:', result);
     return result;
   } catch (error) {
@@ -161,6 +170,7 @@ function evaluateExpression(expression) {
     return 0;
   }
 }
+
 
 // Helper function to convert a date to the number of days since the date
 function convertDateToDays(dateString) {
@@ -337,13 +347,23 @@ function processFormula(identifiedSources, formula, groupKey, csvData) {
 
     try {
         // Enclose each comma-delimited section in parentheses and replace commas with "+"
-        const finalFormula = formula.replace(/([^,]+)(,|$)/g, (match, group, comma) => {
-            return `(${group.trim()})${comma === ',' ? ' + ' : ''}`;
+        let bracketDepth = 0;
+        const finalFormula = formula.replace(/([^,\[\]]+)|([,\[\]])/g, (match, group, symbol) => {
+          if (symbol === '[') {
+            bracketDepth++;
+            return symbol;
+          } else if (symbol === ']') {
+            bracketDepth--;
+            return symbol;
+          } else if (symbol === ',' && bracketDepth === 0) {
+            return ' + ';
+          } else {
+            return match;
+          }
         });
-
-       //console.log('Final Formula for Evaluation (pre-eval):', finalFormula);
+        console.log('Final Formula for Evaluation (pre-eval):', finalFormula);
         const finalResult = evaluateExpression(finalFormula);
-        //console.log('Final Formula Evaluation Result:', finalResult);
+        console.log('Final Formula Evaluation Result:', finalResult);
 
         results[uniqueId].result = finalResult;
     } catch (error) {
