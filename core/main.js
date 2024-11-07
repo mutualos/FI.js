@@ -150,7 +150,7 @@ function evaluateExpression(expression) {
 
   // Define includes function within scope for array membership checks
   function includes(array, value) {
-    return array.includes(value);
+    return array.some(element => element == value);
   }
 
   // Replace 'null' with '0' to prevent evaluation issues
