@@ -245,14 +245,13 @@ function displayResultsInTable() {
     runButton.className = 'button';
     runButton.disabled = true; // Disable the run button initially
   
-    // Identify sources from the formula
-    const identifiedSources = extractSources(appConfig.formula);
-  
+    // Identify sources and inputs from the formula
+    const identifiedPipes = extractPipes(appConfig.formula);
     // Create file inputs for each identified source
     const fileInputs = {};
-    identifiedSources.forEach(sourceName => {
-      const step = document.createElement('div');
-      step.style.marginBottom = "10px";
+    identifiedPipes.sources.forEach(sourceName => {
+      const sourceDiv = document.createElement('div');
+      sourceDiv.style.marginBottom = "10px";
       const label = document.createElement('label');
       label.htmlFor = `${sourceName}-file`;
       label.className = "custom-file-upload";
@@ -271,23 +270,54 @@ function displayResultsInTable() {
           label.classList.add('completed');
           label.innerHTML = `${sourceName}: ${fileName}`; 
         }
-        const allFilesSelected = identifiedSources.every(sourceName => fileInputs[sourceName].files.length > 0);
+        const allFilesSelected = identifiedPipes.sources.every(sourceName => fileInputs[sourceName].files.length > 0);
         runButton.disabled = !allFilesSelected;
       });
   
-      step.appendChild(label);
-      step.appendChild(input);
-      fileInputsContainer.appendChild(step);
+      sourceDiv.appendChild(label);
+      sourceDiv.appendChild(input);
+      fileInputsContainer.appendChild(sourceDiv);
       fileInputs[sourceName] = input;
+    });
+
+    identifiedPipes.inputs.forEach(inputName => {
+      const inputDiv = document.createElement('div');
+      inputDiv.classList.add('form-group');
+      inputDiv.style.marginBottom = "10px";
+      const label = document.createElement('label');
+      label.innerHTML = `${inputName.charAt(0).toUpperCase() + inputName.slice(1)}`;
+
+      const input = document.createElement('input');
+      input.type = "text";
+      input.id = inputName;
+
+       // Event listener to check if all inputs are filled
+      input.addEventListener('input', () => {
+        let allFilled = true;
+
+        // Iterate over all inputs to check their values
+        identifiedPipes.inputs.forEach(name => {
+            const inputElement = document.getElementById(name);
+            if (!inputElement.value.trim()) {
+                allFilled = false;
+            }
+        });
+        runButton.disabled = !allFilled
+      
+      });
+      inputDiv.appendChild(label);
+      inputDiv.appendChild(input);
+      fileInputsContainer.appendChild(inputDiv);
     });
   
     // Handle file selection and process formula
     runButton.addEventListener('click', () => {
-      readFilesAndProcess(fileInputs, identifiedSources, appConfig);
+      processModal(fileInputs, identifiedPipes, appConfig);
       document.body.removeChild(modal);
     });
   
     modalBody.appendChild(fileInputsContainer);
+
     modalBody.appendChild(runButton);
     modalContent.appendChild(modalBody);
     modal.appendChild(modalContent);

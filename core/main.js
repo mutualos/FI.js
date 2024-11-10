@@ -186,33 +186,73 @@ console.log('Translated Header:', translatedHeader);
 //console.log('yearToDateFactor Testing', yearToDateFactor('PMTD'));
 //console.log('evaluateExpression:', evaluateExpression('2021-10-31' > '2020-10-31'))
 
-// Function to extract unique source names from the formula
-function extractSources(formula) {
+// extract unique source and input names from the formula
+function extractPipes(formula) {
   const sourceSet = new Set();
-  const regex = /(\w+)\.(\w+)/g;
+  const inputSet = new Set();
+  const sourceRegex = /(\w+)\.(\w+)/g;  // Matches {source}.function format
+  const inputRegex = /\$(\w+)\.(\w+)/g;     // Matches ${input}.function format
   let match;
-  while ((match = regex.exec(formula)) !== null) {
-    sourceSet.add(match[1]);
+
+  // Match {source}.function notation and add to sourceSet
+  while ((match = sourceRegex.exec(formula)) !== null) {
+    // Check if the match is not preceded by a '$'
+    if (match.index === 0 || formula[match.index - 1] !== '$') {
+      sourceSet.add(match[1]); 
+    }
   }
-  return Array.from(sourceSet);
+
+  // Match ${input}.function notation and add to inputSet
+  while ((match = inputRegex.exec(formula)) !== null) {
+    inputSet.add(match[1]); 
+  }
+
+  return {
+    sources: Array.from(sourceSet),
+    inputs: Array.from(inputSet)
+  };
 }
 
-function processFormula(identifiedSources, formula, groupKey, csvData) {
+function processFormula(identifiedPipes, formula, groupKey, digestData) {
   const results = {};
 
   console.log('Starting formula processing...');
-  console.log('Identified Sources:', identifiedSources);
+  console.log('Identified Pipes:', identifiedPipes);
   console.log('Formula:', formula);
   console.log('Group Key:', groupKey);
-  console.log('CSV Data:', csvData);
+  console.log('Digested Data:', digestData);
 
-  // Iterate over each source's data to ensure flexibility with multiple sources
-  identifiedSources.forEach(sourceName => {
-    const sourceData = csvData[sourceName];
-    console.log(`Processing source: ${sourceName}`);
-    console.log('Source Data:', sourceData);
+// Iterate over each source's data to ensure flexibility with multiple sources
+// Initialize identifiedResources as needed (array or object)
+const identifiedResources = [];
 
-    sourceData.forEach(row => {
+// Iterate over the values in identifiedPipes
+Object.values(identifiedPipes).forEach(value => {
+  if (Array.isArray(value)) {
+      // If the value is an array, concatenate its elements into identifiedResources
+      identifiedResources.push(...value);
+  } else {
+      // If the value is not an array, add it directly
+      identifiedResources.push(value);
+  }
+});
+
+// Output the identifiedResources
+console.log('identifiedResources:', identifiedResources);
+
+// Now, iterate over identifiedResources to process each resource
+identifiedResources.forEach(resourceName => {
+    console.log(`Processing source: ${resourceName}`);
+    console.log('digestData.input', digestData.input)
+    var resourceData;
+    if (digestData.input.some(obj => obj.hasOwnProperty(resourceName))) {
+      resourceData = digestData.input;
+    } else {
+      resourceData = digestData[resourceName];
+    }
+    console.log('resource Data:', resourceData);
+
+    resourceData.forEach(row => {
       const uniqueId = row[groupKey];
       console.log('Processing row:', row);
 
@@ -224,7 +264,7 @@ function processFormula(identifiedSources, formula, groupKey, csvData) {
 
       //console.log('pre formula', formula)
       // Replace source.field with actual data or function results
-      const updatedFormula = formula.replace(new RegExp(`(${sourceName})\\.(\\w+)`, 'g'), (match, source, field) => {
+      const updatedFormula = formula.replace(new RegExp(`(${resourceName})\\.(\\w+)`, 'g'), (match, source, field) => {
         //console.log('Match found:', match);
         //console.log('Source:', source, 'Field:', field);
       
@@ -260,7 +300,7 @@ function processFormula(identifiedSources, formula, groupKey, csvData) {
             const args = paramInfo.map(info => {
               if (info.name === 'source') {
                 // Include source as the source name
-                return sourceName;
+                return resourceName;
               }
       
               const paramHeader = aiTranslater(headers, info.name);
@@ -338,6 +378,7 @@ function processFormula(identifiedSources, formula, groupKey, csvData) {
         });
       }
     });
+  
   });
 
   // After processing all sources, evaluate the complete formula for each uniqueId
@@ -461,9 +502,11 @@ if (appConfig && appConfig.libraries) {
   console.warn('no libraries defined')
 }
 
-window.readFilesAndProcess = function(fileInputs, identifiedSources, appConfig) {
-  const csvData = {};
-  const promises = identifiedSources.map(sourceName => {
+window.processModal = function(fileInputs, identifiedPipes, appConfig) {
+  const digestData = {};
+  const promises = identifiedPipes.sources.map(sourceName => {
+    // Show the spinner before starting the promise
+    showSpinner();
     return new Promise((resolve, reject) => {
       const input = fileInputs[sourceName];
       if (input.files.length > 0) {
@@ -471,7 +514,7 @@ window.readFilesAndProcess = function(fileInputs, identifiedSources, appConfig) 
         const reader = new FileReader();
         reader.onload = function(event) {
           parseCSV(event.target.result, (data) => {
-            csvData[sourceName] = data;
+            digestData[sourceName] = data;
             resolve();
           });
         };
@@ -485,14 +528,23 @@ window.readFilesAndProcess = function(fileInputs, identifiedSources, appConfig) 
     });
   });
 
-  // Show the spinner before starting the promise
-  showSpinner();
+  if (identifiedPipes.inputs.length > 0) {
+    digestData['input'] = [];
+  }
+  identifiedPipes.inputs.forEach(inputName => {
+    const addInput = {};
+    addInput[inputName] = document.getElementById(inputName).value;
+    digestData['input'].push(addInput);
+  });
 
   Promise.all(promises)
     .then(() => {
-      window.analytics = computeAnalytics(csvData);
-      console.log('Analytics:', window.analytics);
-      combinedResults = processFormula(identifiedSources, appConfig.formula, appConfig.groupBy, csvData);
+      let analytics = {};
+      if (identifiedPipes.sources.length > 0) {
+        window.analytics = computeAnalytics(digestData);
+        console.log('Analytics:', window.analytics);
+      }
+      combinedResults = processFormula(identifiedPipes, appConfig.formula, appConfig.groupBy, digestData);
       displayResultsInTable(combinedResults);
     })
     .catch(error => {
