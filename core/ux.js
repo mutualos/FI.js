@@ -239,7 +239,7 @@ function displayResultsInTable() {
     const modalBody = document.createElement('div');
     modalBody.className = 'modal-body';
   
-    const fileInputsContainer = document.createElement('div');
+    const inputsContainer = document.createElement('div');
     const runButton = document.createElement('button');
     runButton.textContent = 'Run';
     runButton.className = 'button';
@@ -276,7 +276,7 @@ function displayResultsInTable() {
   
       sourceDiv.appendChild(label);
       sourceDiv.appendChild(input);
-      fileInputsContainer.appendChild(sourceDiv);
+      inputsContainer.appendChild(sourceDiv);
       fileInputs[sourceName] = input;
     });
 
@@ -303,21 +303,24 @@ function displayResultsInTable() {
             }
         });
         runButton.disabled = !allFilled
-      
       });
       inputDiv.appendChild(label);
       inputDiv.appendChild(input);
-      fileInputsContainer.appendChild(inputDiv);
+      inputsContainer.appendChild(inputDiv);
     });
   
     // Handle file selection and process formula
     runButton.addEventListener('click', () => {
       processModal(fileInputs, identifiedPipes, appConfig);
-      document.body.removeChild(modal);
+      if (identifiedPipes.sources.length > 0) {
+        document.body.removeChild(modal);
+      }
     });
-  
-    modalBody.appendChild(fileInputsContainer);
+    const outputContainer = document.createElement('div');
+    outputContainer.id = 'outputElement';
 
+    modalBody.appendChild(inputsContainer);
+    modalBody.appendChild(outputContainer);
     modalBody.appendChild(runButton);
     modalContent.appendChild(modalBody);
     modal.appendChild(modalContent);

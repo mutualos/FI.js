@@ -5,6 +5,9 @@ if (typeof appConfig === 'undefined') {
   throw new Error('appConfig is not defined. Please ensure it is defined before including main.js.');
 }
 
+// if logger is true, select console.logs will log
+let logger = false; 
+
 /**
 * Extracts unique source names from the formula.
 * parser handles:
@@ -92,8 +95,7 @@ function isDate(value) {
 
 function evaluateExpression(expression) {
   let conditionLocked = false; // Initialize within the function to ensure it resets each time
-
-  console.log('Original Expression:', expression);
+  if (logger) console.log('Original Expression:', expression);
 
   // Regex to match conditions inside double curly braces {{ }}
   const conditionRegex = /\{\{([\s\S]+?)\}\}/g;
@@ -143,7 +145,7 @@ function evaluateExpression(expression) {
       }
     });
   }
-  console.log('Expression after processing:', expression);
+  if (logger) console.log('Expression after processing:', expression);
 
   // **New step to convert 'x in [a, b, c]' syntax to array membership checks**
   expression = expression.replace(/(\S+)\s+in\s+\[([^\]]+)\]/g, 'includes([$2], $1)');
@@ -163,7 +165,7 @@ function evaluateExpression(expression) {
   try {
     // Use includes function in evaluation
     const result = Function('includes', `'use strict'; return (${safeExpression})`)(includes);
-    console.log('Final Evaluated Result:', result);
+    if (logger) console.log('Final Evaluated Result:', result);
     return result;
   } catch (error) {
     console.error('Error evaluating expression:', error, safeExpression);
@@ -190,21 +192,28 @@ console.log('Translated Header:', translatedHeader);
 function extractPipes(formula) {
   const sourceSet = new Set();
   const inputSet = new Set();
-  const sourceRegex = /(\w+)\.(\w+)/g;  // Matches {source}.function format
-  const inputRegex = /\$(\w+)\.(\w+)/g;     // Matches ${input}.function format
+  
+  // Regex to match {source}.function format, excluding 'input'
+  const sourceRegex = /\b(?!input\b)(\w+)\.\w+/g;
+  
+  // Regex to match input.function(args) format
+  const inputRegex = /input\.\w+\(([^)]*)\)/g;
+  
   let match;
 
-  // Match {source}.function notation and add to sourceSet
+  // Extract sources from {source}.function notation
   while ((match = sourceRegex.exec(formula)) !== null) {
-    // Check if the match is not preceded by a '$'
-    if (match.index === 0 || formula[match.index - 1] !== '$') {
-      sourceSet.add(match[1]); 
-    }
+    sourceSet.add(match[1]);
   }
 
-  // Match ${input}.function notation and add to inputSet
+  // Extract inputs from input.function(args) notation
   while ((match = inputRegex.exec(formula)) !== null) {
-    inputSet.add(match[1]); 
+    const args = match[1].split(',').map(arg => arg.trim());
+    args.forEach(arg => {
+      if (arg) {
+        inputSet.add(arg);
+      }
+    });
   }
 
   return {
@@ -212,6 +221,7 @@ function extractPipes(formula) {
     inputs: Array.from(inputSet)
   };
 }
+
 
 function processFormula(identifiedPipes, formula, groupKey, digestData) {
   const results = {};
@@ -222,61 +232,66 @@ function processFormula(identifiedPipes, formula, groupKey, digestData) {
   console.log('Group Key:', groupKey);
   console.log('Digested Data:', digestData);
 
-// Iterate over each source's data to ensure flexibility with multiple sources
-// Initialize identifiedResources as needed (array or object)
-const identifiedResources = [];
+  // Iterate over each source's data to ensure flexibility with multiple sources
+  // Initialize identifiedResources as needed (array or object)
+  const identifiedResources = [];
 
-// Iterate over the values in identifiedPipes
-Object.values(identifiedPipes).forEach(value => {
-  if (Array.isArray(value)) {
-      // If the value is an array, concatenate its elements into identifiedResources
-      identifiedResources.push(...value);
-  } else {
-      // If the value is not an array, add it directly
-      identifiedResources.push(value);
-  }
-});
-
-// Output the identifiedResources
-console.log('identifiedResources:', identifiedResources);
-
-// Now, iterate over identifiedResources to process each resource
-identifiedResources.forEach(resourceName => {
-    console.log(`Processing source: ${resourceName}`);
-    console.log('digestData.input', digestData.input)
-    var resourceData;
-    if (digestData.input.some(obj => obj.hasOwnProperty(resourceName))) {
-      resourceData = digestData.input;
+  // Iterate over the values in identifiedPipes
+  Object.values(identifiedPipes).forEach(value => {
+    if (Array.isArray(value)) {
+        // If the value is an array, concatenate its elements into identifiedResources
+        identifiedResources.push(...value);
     } else {
-      resourceData = digestData[resourceName];
+        // If the value is not an array, add it directly
+        identifiedResources.push(value);
     }
+  });
+  // Output the identifiedResources
+  console.log('identifiedResources:', identifiedResources);
+
+  // Now, iterate over identifiedResources to process each resource
+  identifiedResources.forEach(resourceID => {
+    console.log(`Processing source: ${resourceID}`);
+    var resourceData;
+    var resourceName = resourceID;
+    if (digestData.input && digestData.input.some(obj => obj.hasOwnProperty(resourceName))) {
+      console.log('digestData.input', digestData.input)
+      resourceData = digestData.input;
+      resourceName = 'input';
+    } else {
+      resourceData = digestData[resourceID];
+    }
+    console.log('resource Name:', resourceName);
     console.log('resource Data:', resourceData);
 
+    const headers = resourceData.length > 0 ? Object.keys(resourceData[0]) : [];
     resourceData.forEach(row => {
       const uniqueId = row[groupKey];
       console.log('Processing row:', row);
-
       if (!results[uniqueId]) {
         results[uniqueId] = { result: 0, count: 1, formula: '' };
       } else {
         results[uniqueId].count += 1;
       }
 
-      //console.log('pre formula', formula)
+      console.log('pre formula', formula)
+      // remove input parameters
+      const scrubbedFormula = formula.replace(/(input\.\w+)\([^)]*\)/g, '$1');
+      console.log('scrubbed formula', scrubbedFormula)
       // Replace source.field with actual data or function results
-      const updatedFormula = formula.replace(new RegExp(`(${resourceName})\\.(\\w+)`, 'g'), (match, source, field) => {
-        //console.log('Match found:', match);
-        //console.log('Source:', source, 'Field:', field);
+      const updatedFormula = scrubbedFormula.replace(new RegExp(`(${resourceName})\\.(\\w+)`, 'g'), (match, source, functionName) => {
+        console.log('Match found:', match);
+        console.log('Source:', source, 'functionName:', functionName);
       
-        const headers = Object.keys(row);
-        const translatedHeader = aiTranslater(headers, field);
+        //@_@ const headers = Object.keys(row);
+        const translatedHeader = aiTranslater(headers, functionName);
       
         for (const libName in window.libraries) {
           const lib = window.libraries[libName];
       
-          if (lib.functions && lib.functions[field] && typeof lib.functions[field].implementation === 'function') {
-            const functionDef = lib.functions[field];
-            //console.log(`Function detected in library '${libName}': ${field}`);
+          if (lib.functions && lib.functions[functionName] && typeof lib.functions[functionName].implementation === 'function') {
+            const functionDef = lib.functions[functionName];
+            console.log(`Function detected in library '${libName}': ${functionName}`);
       
             // Extract function parameter names and determine if they are optional
             let paramInfo = functionDef.implementation
@@ -299,7 +314,7 @@ identifiedResources.forEach(resourceName => {
       
             const args = paramInfo.map(info => {
               if (info.name === 'source') {
-                // Include source as the source name
+                // Include source as the resource name
                 return resourceName;
               }
       
@@ -323,7 +338,7 @@ identifiedResources.forEach(resourceName => {
               console.log('Skipping function evaluation due to missing required arguments.', args);
               return '0';
             }
-      
+            
             const result = functionDef.implementation(...args);
             console.log('Function result:', result);
             return result;
@@ -540,9 +555,10 @@ window.processModal = function(fileInputs, identifiedPipes, appConfig) {
   Promise.all(promises)
     .then(() => {
       let analytics = {};
-      if (identifiedPipes.sources.length > 0) {
+      if (identifiedPipes.sources.length > 0) {  //data sources
         window.analytics = computeAnalytics(digestData);
         console.log('Analytics:', window.analytics);
+        document.getElementById('chart-container').style.display = 'block';
       }
       combinedResults = processFormula(identifiedPipes, appConfig.formula, appConfig.groupBy, digestData);
       displayResultsInTable(combinedResults);
@@ -554,7 +570,6 @@ window.processModal = function(fileInputs, identifiedPipes, appConfig) {
     .finally(() => {
       // Hide the spinner after processing
       hideSpinner();
-      document.getElementById('chart-container').style.display = 'block';
     });
 };
 
