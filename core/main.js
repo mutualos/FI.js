@@ -95,7 +95,11 @@ function isDate(value) {
 
 function evaluateExpression(expression) {
   let conditionLocked = false; // Initialize within the function to ensure it resets each time
-  if (logger) console.log('Original Expression:', expression);
+  console.log('Original Expression:', expression);
+
+  // Step 1: Wrap each ternary operation with parentheses, but avoid including surrounding operators
+  expression = expression.replace(/(\{\{[^{}]+\}\}\s*\?\s*[^:]+:\s*[^+]+)/g, '($&)');
+  console.log('Expression after wrapping ternary operations:', expression);
 
   // Regex to match conditions inside double curly braces {{ }}
   const conditionRegex = /\{\{([\s\S]+?)\}\}/g;
