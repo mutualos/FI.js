@@ -206,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function createLegend(labels, data, field) {
     legendContainer.innerHTML = ''; // Clear previous legend
+    const tableContainer = document.createElement('div');
+    tableContainer.className = 'table-container';
     const table = document.createElement('table');
     table.className = 'table'; 
     table.id = 'chart-legend';
@@ -241,7 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
       row.appendChild(legendValue);
       table.appendChild(row);
     });
-    legendContainer.appendChild(table);
+    tableContainer.appendChild(table);
+    legendContainer.appendChild(tableContainer);
   }
 
   function getRandomColor() {
