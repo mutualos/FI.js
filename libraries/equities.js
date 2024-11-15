@@ -48,8 +48,6 @@ const equities = {
                 // Check if data is cached for the symbol
                 if (equities.functions.intrinsicValue.cachedData?.symbol === symbol) {
                     console.log('Data is now available for:', symbol);
-                    //const FCF = equities.functions.calculateHistoricalFCF(equities.functions.intrinsicValue.cachedData.cashflow);
-                    //document.getElementById('outputElement').textContent = `Price: ${equities.functions.intrinsicValue.cachedData.price} Future Cash Flow: ${FCF} Data: ${equities.functions.intrinsicValue.cachedData.APIdata}`;
                     equities.functions.calculateIntrinsicValue(equities.functions.intrinsicValue.cachedData.APIdata, equities.functions.intrinsicValue.cachedData.symbol, 8, 2)
                     clearInterval(interval); // Stop polling
                 }
@@ -69,8 +67,10 @@ const equities = {
             const perpetualGrowthRate = isNaN(perpetualGrowthRateInput) ? 0.02 : perpetualGrowthRateInput; // Default to 2% if invalid
             const years = 5;
 
+             // Use the provided Free Cash Flow (FCF) data
+            const historicalFCF = data.freeCashFlow;
             // Calculate historical Free Cash Flow (FCF)
-            const historicalFCF = equities.functions.calculateHistoricalFCF(data.cashFlow);
+            //const historicalFCF = equities.functions.calculateHistoricalFCF(data.cashFlow);
 
             // Check if historical FCF data is sufficient
             if (historicalFCF.length < 2) {
@@ -116,7 +116,7 @@ const equities = {
             }
 
             // Calculate intrinsic value per share
-            const intrinsicValuePerShare = intrinsicValueTotal / outstandingShares;
+            const intrinsicValuePerShareDCF = intrinsicValueTotal / outstandingShares;
 
             // Get current stock price from data
             const currentPrice = data.currentPrice;
@@ -127,14 +127,36 @@ const equities = {
             }
 
             // Determine if the stock is undervalued or overvalued
-            const undervalued = intrinsicValuePerShare > currentPrice;
+            const undervaluedDCF = intrinsicValuePerShareDCF > currentPrice;
+            
+            // Perform P/E Ratio Valuation
+            const comps = data.averageMultiples;
+            let intrinsicValuePerSharePE = null;
+            if (comps.peRatio) {
+                // Extract the latest EPS from income statements
+                const latestEPS = getLatestEPS(data.incomeStatement);
+                if (latestEPS !== null && latestEPS !== 0) {
+                    intrinsicValuePerSharePE = (comps.peRatio * latestEPS).toFixed(2);
+                } else {
+                    equities.functions.displayError('Invalid or missing Earnings Per Share (EPS) data.');
+                    return;
+                }
+            }
+
+            // Determine if the stock is undervalued or overvalued based on P/E Ratio
+            let undervaluedPE = null;
+            if (intrinsicValuePerSharePE !== null) {
+                undervaluedPE = parseFloat(intrinsicValuePerSharePE) > currentPrice;
+            }
 
             // Pass all relevant data to the display function
             equities.functions.displayResult({
                 symbol: symbol,
-                intrinsicValue: intrinsicValuePerShare.toFixed(2),
+                intrinsicValueDCF: intrinsicValuePerShareDCF.toFixed(2),
+                intrinsicValuePE: intrinsicValuePerSharePE,
                 currentPrice: currentPrice.toFixed(2),
-                undervalued: undervalued,
+                undervaluedDCF: undervaluedDCF,
+                undervaluedPE: undervaluedPE,
                 historicalFCF: historicalFCF,
                 averageGrowthRate: (averageGrowthRate * 100).toFixed(2), // Convert to percentage
                 discountRate: (discountRate * 100).toFixed(2), // Convert to percentage
@@ -202,22 +224,43 @@ const equities = {
 
         // Function to display the results
         displayResult: function(data) {
-            const valuation = data.undervalued ? 'Undervalued' : 'Overvalued';
-            const resultDiv = document.getElementById('result');
-
             // Format numbers with commas and two decimal places
             const formatNumber = (num) => Number(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+        
+            // Determine valuation statuses
+            const valuationDCF = data.undervaluedDCF ? 'Undervalued' : 'Overvalued';
+            const valuationPE = data.undervaluedPE ? 'Undervalued' : 'Overvalued';
+        
             // Create HTML content
-            const content = `
+            let content = `
                 <h2>${data.symbol}</h2>
-                <p><strong>Intrinsic Value per Share:</strong> $${formatNumber(data.intrinsicValue)}</p>
-                <p><strong>Current Stock Price:</strong> $${formatNumber(data.currentPrice)}</p>
-                <p><strong>Valuation:</strong> <span style="color:${data.undervalued ? 'green' : 'red'};">${valuation}</span></p>
+                <h3>Intrinsic Value Calculations:</h3>
+                <table border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <th>Method</th>
+                        <th>Intrinsic Value per Share ($)</th>
+                        <th>Current Stock Price ($)</th>
+                        <th>Valuation Status</th>
+                    </tr>
+                    <tr>
+                        <td>Discounted Cash Flow (DCF)</td>
+                        <td>${formatNumber(data.intrinsicValueDCF)}</td>
+                        <td>${formatNumber(data.currentPrice)}</td>
+                        <td style="color:${data.undervaluedDCF ? 'green' : 'red'};">${valuationDCF}</td>
+                    </tr>
+                    <tr>
+                        <td>Price-to-Earnings (P/E) Ratio</td>
+                        <td>${formatNumber(data.intrinsicValuePE)}</td>
+                        <td>${formatNumber(data.currentPrice)}</td>
+                        <td style="color:${data.undervaluedPE ? 'green' : 'red'};">${valuationPE}</td>
+                    </tr>
+                </table>
+        
                 <h3>Calculation Details:</h3>
                 <p><strong>Discount Rate (WACC):</strong> ${data.discountRate}%</p>
                 <p><strong>Average FCF Growth Rate:</strong> ${data.averageGrowthRate}%</p>
                 <p><strong>Terminal Value:</strong> $${formatNumber(data.terminalValue)}</p>
+        
                 <h3>Historical Free Cash Flow (FCF):</h3>
                 <ul>
                     ${data.historicalFCF.map((fcf, index) => `<li>Year ${index + 1}: $${formatNumber(fcf)}</li>`).join('')}
