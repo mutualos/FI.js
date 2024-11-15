@@ -131,10 +131,11 @@ const equities = {
             
             // Perform P/E Ratio Valuation
             const comps = data.averageMultiples;
+            console.log('comps', comps)
             let intrinsicValuePerSharePE = null;
             if (comps.peRatio) {
                 // Extract the latest EPS from income statements
-                const latestEPS = getLatestEPS(data.incomeStatement);
+                const latestEPS = equities.functions.getLatestEPS(data.incomeStatement);
                 if (latestEPS !== null && latestEPS !== 0) {
                     intrinsicValuePerSharePE = (comps.peRatio * latestEPS).toFixed(2);
                 } else {
@@ -162,6 +163,13 @@ const equities = {
                 discountRate: (discountRate * 100).toFixed(2), // Convert to percentage
                 terminalValue: terminalValue.toFixed(2)
             });
+        },
+
+        // Function to get the latest Earnings Per Share (EPS) from income statements
+        getLatestEPS: function(incomeStatements) {
+            if (incomeStatements.length === 0) return null;
+            const latest = incomeStatements[0];
+            return latest.eps !== undefined ? latest.eps : null; // Adjust the key based on API response
         },
 
         // Function to calculate historical Free Cash Flow (FCF)
